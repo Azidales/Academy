@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Academic Flow - Renato</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); }
+        .day-card { aspect-ratio: 1/1; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.875rem; transition: 0.2s; cursor: pointer; }
+        .is-absent { background-color: #fee2e2 !important; color: #ef4444 !important; font-weight: 800; border: 1px solid #fca5a5; }
+        .is-cancelled { border: 1px dashed #cbd5e1 !important; color: #94a3b8; background-color: #f8fafc; }
+        .today { border: 2px solid #2563eb !important; background-color: #eff6ff !important; }
+        
+        /* Controle de abas Mobile vs Desktop */
+        @media (min-width: 768px) {
+            .tab-content { display: block !important; opacity: 1 !important; transform: none !important; }
+            nav.mobile-nav { display: none; }
+            .desktop-grid { display: grid; grid-template-columns: 1fr 350px; gap: 2rem; }
+        }
+        
+        @media (max-width: 767px) {
+            .tab-content { display: none; }
+            .tab-active { display: block; animation: fadeIn 0.3s ease forwards; }
+            .nav-active { color: #2563eb !important; }
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 pb-24 md:pb-10">
+
+    <div id="loader" class="fixed inset-0 bg-white z-50 flex flex-col items-center justify-center transition-opacity duration-500">
+        <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mb-4"></div>
+        <p class="text-[10px] font-black uppercase tracking-widest text-slate-400">Sincronizando Cloud...</p>
+    </div>
+
+    <div class="max-w-6xl mx-auto px-4 pt-6 md:pt-12">
+        
+        <header class="flex justify-between items-center mb-8 md:mb-12">
+            <div>
+                <h1 class="text-2xl md:text-4xl font-800 tracking-tighter italic uppercase text-slate-900 leading-none">Academic<span class="text-blue-600">Flow</span></h1>
+                <p class="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-[0.2em] mt-2">Dashboard Acadêmico • Renato</p>
+            </div>
+            <div class="flex items-center gap-3 bg-white p-2 px-4 rounded-full shadow-sm border border-slate-100">
+                <div class="hidden md:block text-right">
+                    <p class="text-[10px] font-black text-slate-400 leading-none uppercase">Status</p>
+                    <p class="text-xs font-bold text-green-600">Conectado</p>
+                </div>
+                <div class="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-100">
+                    <i data-lucide="user" class="w-5 h-5"></i>
+                </div>
+            </div>
+        </header>
+
+        <div class="desktop-grid">
+            <div class="space-y-8">
+                
+                <section id="tab-summary" class="tab-content tab-active">
+                    <h2 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                        <i data-lucide="bar-chart-3" class="w-3 h-3 text-blue-500"></i> Resumo de Faltas
+                    </h2>
+                    <div id="summary-container" class="grid grid-cols-1 sm:grid-cols-3 gap-4"></div>
+                </section>
+
+                <section id="tab-calendar" class="tab-content">
+                    <h2 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                        <i data-lucide="calendar" class="w-3 h-3 text-blue-500"></i> Calendário Mensal
+                    </h2>
+                    <div class="bg-white p-6 rounded-[2rem] shadow-xl shadow-slate-200/50 border border-white">
+                        <div class="flex justify-between items-center mb-8">
+                            <h3 id="monthDisplay" class="font-800 text-xl capitalize text-slate-800"></h3>
+                            <div class="flex gap-2">
+                                <button onclick="changeMonth(-1)" class="p-2 hover:bg-slate-50 rounded-xl transition text-slate-400"><i data-lucide="chevron-left"></i></button>
+                                <button onclick="changeMonth(1)" class="p-2 hover:bg-slate-50 rounded-xl transition text-slate-400"><i data-lucide="chevron-right"></i></button>
+                            </div>
+                        </div>
+                        <div class="calendar-grid text-center text-[10px] font-black text-slate-300 mb-4 uppercase tracking-tighter">
+                            <div>Dom</div><div>Seg</div><div>Ter</div><div>Qua</div><div>Qui</div><div>Sex</div><div>Sáb</div>
+                        </div>
+                        <div id="calendarDays" class="calendar-grid gap-2 md:gap-3"></div>
+                    </div>
+                </section>
+            </div>
+
+            <aside id="tab-today" class="tab-content mt-8 md:mt-0">
+                <div class="sticky top-12">
+                    <h2 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                        <i data-lucide="info" class="w-3 h-3 text-blue-500"></i> Detalhes do Dia
+                    </h2>
+                    <div id="dayDetails" class="bg-white/70 backdrop-blur-xl p-6 rounded-[2rem] border border-white shadow-xl shadow-slate-200/50 min-h-[300px]">
+                        <div class="flex flex-col items-center justify-center py-20 text-center opacity-30">
+                            <i data-lucide="mouse-pointer-click" class="w-12 h-12 mb-4"></i>
+                            <p class="text-xs font-bold uppercase tracking-widest">Selecione uma data</p>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </div>
+
+    <nav class="mobile-nav fixed bottom-6 left-6 right-6 bg-slate-900/90 backdrop-blur-md rounded-full px-8 py-4 flex justify-between items-center z-40 shadow-2xl shadow-blue-900/20">
+        <button onclick="switchTab('summary', this)" class="flex flex-col items-center gap-1 text-slate-500 nav-active transition-all">
+            <i data-lucide="layout-grid" class="w-5 h-5"></i>
+        </button>
+        <button onclick="switchTab('calendar', this)" class="flex flex-col items-center gap-1 text-slate-500 transition-all">
+            <i data-lucide="calendar" class="w-5 h-5"></i>
+        </button>
+        <button id="todayBtn" onclick="switchTab('today', this)" class="flex flex-col items-center gap-1 text-slate-500 transition-all">
+            <i data-lucide="list-checks" class="w-5 h-5"></i>
+        </button>
+    </nav>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyC9W4W6bDdH6p2GLi_TwG2XDd0yPNH8SEQ",
+            authDomain: "academic-flow-3a2ef.firebaseapp.com",
+            projectId: "academic-flow-3a2ef",
+            storageBucket: "academic-flow-3a2ef.firebasestorage.app",
+            messagingSenderId: "469639047695",
+            appId: "1:469639047695:web:358d524690e08be504917a"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        const subjects = {
+            "SE616": { name: "Economia Internacional I", days: [1, 3], start: {1: "21:00", 3: "19:00"} },
+            "SE619": { name: "Teoria Macroeconômica II", days: [3, 5], start: {3: "21:00", 5: "19:00"} },
+            "SE615": { name: "Elaboração e Análise de Projetos I", days: [1, 4], start: {1: "19:00", 4: "21:00"} }
+        };
+
+        let statusData = {};
+        let currentDate = new Date();
+
+        onSnapshot(doc(db, "users", "renato"), (snap) => {
+            if (snap.exists()) statusData = snap.data().absences || {};
+            renderAll();
+            document.getElementById('loader').style.opacity = '0';
+            setTimeout(() => document.getElementById('loader').style.display = 'none', 500);
+        });
+
+        window.switchTab = (tabId, btn) => {
+            if (window.innerWidth < 768) {
+                document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('tab-active'));
+                document.getElementById('tab-' + tabId).classList.add('tab-active');
+                document.querySelectorAll('nav button').forEach(b => b.classList.remove('nav-active'));
+                btn.classList.add('nav-active');
+                lucide.createIcons();
+            }
+        };
+
+        window.setStatus = async (date, subId, status, btn) => {
+            btn.innerHTML = `<span class="animate-pulse italic">OK...</span>`;
+            if (!statusData[date]) statusData[date] = {};
+            statusData[date][subId] === status ? delete statusData[date][subId] : statusData[date][subId] = status;
+            if (Object.keys(statusData[date]).length === 0) delete statusData[date];
+            await setDoc(doc(db, "users", "renato"), { absences: statusData }, { merge: true });
+            window.showDay(date, new Date(date + 'T12:00:00').getDay());
+        };
+
+        window.changeMonth = (s) => { currentDate.setMonth(currentDate.getMonth() + s); renderAll(); };
+
+        window.showDay = (dateKey, dayOfWeek) => {
+            const container = document.getElementById('dayDetails');
+            const dateFmt = dateKey.split('-').reverse().join('/');
+            const dayName = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"][dayOfWeek];
+            
+            let html = `<div class="mb-8">
+                            <h3 class="text-2xl font-800 text-slate-800 tracking-tighter">${dateFmt}</h3>
+                            <div class="flex items-center gap-2 mt-1">
+                                <span class="text-[10px] font-black uppercase text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">${dayName}</span>
+                            </div>
+                        </div><div class="space-y-4">`;
+            let found = false;
+
+            Object.keys(subjects).forEach(id => {
+                if (subjects[id].days.includes(dayOfWeek)) {
+                    found = true;
+                    const st = statusData[dateKey]?.[id];
+                    html += `
+                        <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm transition hover:shadow-md">
+                            <div class="flex justify-between items-center mb-4">
+                                <span class="text-[10px] font-black text-slate-300 uppercase">${id}</span>
+                                <span class="text-[10px] font-black text-blue-600 border border-blue-100 px-2 py-0.5 rounded-lg">${subjects[id].start[dayOfWeek]}</span>
+                            </div>
+                            <h4 class="text-sm font-bold text-slate-700 mb-5 leading-snug">${subjects[id].name}</h4>
+                            <div class="grid grid-cols-2 gap-2">
+                                <button onclick="window.setStatus('${dateKey}', '${id}', 'absent', this)" class="py-3 rounded-2xl text-[10px] font-800 border transition ${st==='absent'?'bg-red-500 text-white border-red-500 shadow-lg shadow-red-200':'bg-white text-red-500 border-red-50'}">FALTEI</button>
+                                <button onclick="window.setStatus('${dateKey}', '${id}', 'cancelled', this)" class="py-3 rounded-2xl text-[10px] font-800 border transition ${st==='cancelled'?'bg-slate-700 text-white border-slate-700 shadow-lg shadow-slate-200':'bg-white text-slate-400 border-slate-50'}">CANCELADA</button>
+                            </div>
+                        </div>`;
+                }
+            });
+
+            if(!found) html = `<div class="py-20 text-center opacity-30"><i data-lucide="coffee" class="w-10 h-10 mx-auto mb-2"></i><p class="text-[10px] font-bold uppercase tracking-widest">Sem compromissos</p></div>`;
+            
+            container.innerHTML = html + `</div>`;
+            if (window.innerWidth < 768) window.switchTab('today', document.getElementById('todayBtn'));
+            lucide.createIcons();
+        };
+
+        function renderAll() {
+            const sumContainer = document.getElementById('summary-container');
+            sumContainer.innerHTML = '';
+            Object.keys(subjects).forEach(id => {
+                const faults = Object.values(statusData).filter(d => d[id] === 'absent').length;
+                sumContainer.innerHTML += `
+                    <div class="bg-white p-5 rounded-3xl border border-white flex justify-between items-center shadow-xl shadow-slate-200/50">
+                        <div><p class="text-[9px] font-black text-slate-300 uppercase leading-none mb-1">${id}</p><h4 class="text-xs font-bold text-slate-800 truncate max-w-[120px]">${subjects[id].name}</h4></div>
+                        <div class="text-2xl font-800 ${faults>4?'text-red-500':'text-blue-600'}">${faults}</div>
+                    </div>`;
+            });
+
+            const cal = document.getElementById('calendarDays');
+            const disp = document.getElementById('monthDisplay');
+            cal.innerHTML = '';
+            const y = currentDate.getFullYear(), m = currentDate.getMonth();
+            disp.innerText = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(currentDate);
+            const first = new Date(y, m, 1).getDay(), days = new Date(y, m+1, 0).getDate();
+            const now = new Date();
+            const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+            for(let i=0; i<first; i++) cal.innerHTML += `<div></div>`;
+            for(let d=1; d<=days; d++){
+                const dk = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                const dw = new Date(y, m, d).getDay();
+                let has = false; Object.values(subjects).forEach(s => { if(s.days.includes(dw)) has=true; });
+                const st = statusData[dk] || {};
+                const isA = Object.values(st).includes('absent'), isC = Object.values(st).includes('cancelled') && !isA;
+                cal.innerHTML += `<div onclick="window.showDay('${dk}', ${dw})" class="day-card ${has?'bg-slate-50 text-slate-800 font-bold hover:bg-slate-100':'text-slate-200'} ${isA?'is-absent':''} ${isC?'is-cancelled':''} ${dk===todayKey?'today':''}">${d}</div>`;
+            }
+            lucide.createIcons();
+        }
+    </script>
+</body>
+</html>
