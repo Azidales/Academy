@@ -15,8 +15,10 @@
         /* Cores de Status */
         .is-present { background-color: #eff6ff !important; color: #2563eb !important; font-weight: 800; border: 1px solid #bfdbfe !important; }
         .is-absent { background-color: #fee2e2 !important; color: #ef4444 !important; font-weight: 800; border: 1px solid #fca5a5 !important; }
-        .is-cancelled { border: 1px dashed #cbd5e1 !important; color: #94a3b8; background-color: #f8fafc; }
-        .today { border: 2px solid #2563eb !important; }
+        /* FIX 3: Cancelado mais escuro e evidente */
+        .is-cancelled { border: 1px dashed #475569 !important; color: #475569; background-color: #e2e8f0; font-weight: 700; }
+        /* FIX 2: Today usa outline para não conflitar com status de cor */
+        .today { outline: 2px solid #2563eb; outline-offset: 1px; border-radius: 12px; }
         
         @media (min-width: 768px) {
             .tab-content { display: block !important; }
@@ -209,7 +211,11 @@
             const disp = document.getElementById('monthDisplay');
             cal.innerHTML = '';
             const y = currentDate.getFullYear(), m = currentDate.getMonth();
-            disp.innerText = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(currentDate);
+
+            // FIX 1: Capitaliza só o primeiro caractere, mantendo "de" minúsculo
+            const raw = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(currentDate);
+            disp.innerText = raw.charAt(0).toUpperCase() + raw.slice(1);
+
             const first = new Date(y, m, 1).getDay(), days = new Date(y, m+1, 0).getDate();
             const now = new Date(), todayKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
 
