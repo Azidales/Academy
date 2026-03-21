@@ -15,9 +15,8 @@
         /* Cores de Status */
         .is-present { background-color: #eff6ff !important; color: #2563eb !important; font-weight: 800; border: 1px solid #bfdbfe !important; }
         .is-absent { background-color: #fee2e2 !important; color: #ef4444 !important; font-weight: 800; border: 1px solid #fca5a5 !important; }
-        /* FIX 3: Cancelado mais escuro e evidente */
         .is-cancelled { border: 1px dashed #475569 !important; color: #475569; background-color: #e2e8f0; font-weight: 700; }
-        /* FIX 2: Today usa outline para não conflitar com status de cor */
+        .no-class { background-color: #f8fafc; border: 1px solid #e2e8f0 !important; color: #cbd5e1; }
         .today { outline: 2px solid #2563eb; outline-offset: 1px; border-radius: 12px; }
         
         @media (min-width: 768px) {
@@ -69,7 +68,8 @@
                     </h2>
                     <div class="bg-white p-6 rounded-[2rem] shadow-xl shadow-slate-200/50 border border-white">
                         <div class="flex justify-between items-center mb-8">
-                            <h3 id="monthDisplay" class="font-800 text-xl capitalize text-slate-800"></h3>
+                            <!-- FIX: removido 'capitalize' para não forçar maiúsculo em cada palavra -->
+                            <h3 id="monthDisplay" class="font-800 text-xl text-slate-800"></h3>
                             <div class="flex gap-2">
                                 <button onclick="changeMonth(-1)" class="p-2 hover:bg-slate-50 rounded-xl transition text-slate-400"><i data-lucide="chevron-left"></i></button>
                                 <button onclick="changeMonth(1)" class="p-2 hover:bg-slate-50 rounded-xl transition text-slate-400"><i data-lucide="chevron-right"></i></button>
@@ -204,7 +204,8 @@
             sumContainer.innerHTML = '';
             Object.keys(subjects).forEach(id => {
                 const faults = Object.values(statusData).filter(d => d[id] === 'absent').length;
-                sumContainer.innerHTML += `<div class="bg-white p-5 rounded-3xl border border-white flex justify-between items-center shadow-xl shadow-slate-200/50"><div><p class="text-[9px] font-black text-slate-300 uppercase leading-none mb-1">${id}</p><h4 class="text-xs font-bold text-slate-800 truncate max-w-[120px]">${subjects[id].name}</h4></div><div class="text-2xl font-800 ${faults>4?'text-red-500':'text-blue-600'}">${faults}</div></div>`;
+                // FIX: removido truncate e max-w para nome completo da matéria
+                sumContainer.innerHTML += `<div class="bg-white p-5 rounded-3xl border border-white flex justify-between items-center shadow-xl shadow-slate-200/50"><div class="flex-1 mr-4"><p class="text-[9px] font-black text-slate-300 uppercase leading-none mb-1">${id}</p><h4 class="text-xs font-bold text-slate-800 leading-snug">${subjects[id].name}</h4></div><div class="text-2xl font-800 shrink-0 ${faults>4?'text-red-500':'text-blue-600'}">${faults}</div></div>`;
             });
 
             const cal = document.getElementById('calendarDays');
@@ -212,7 +213,7 @@
             cal.innerHTML = '';
             const y = currentDate.getFullYear(), m = currentDate.getMonth();
 
-            // FIX 1: Capitaliza só o primeiro caractere, mantendo "de" minúsculo
+            // FIX: capitaliza só o primeiro caractere, "de" permanece minúsculo
             const raw = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(currentDate);
             disp.innerText = raw.charAt(0).toUpperCase() + raw.slice(1);
 
@@ -226,7 +227,8 @@
                 let has = false; Object.values(subjects).forEach(s => { if(s.days.includes(dw)) has=true; });
                 const st = statusData[dk] || {};
                 const isP = Object.values(st).includes('present'), isA = Object.values(st).includes('absent'), isC = Object.values(st).includes('cancelled') && !isA && !isP;
-                cal.innerHTML += `<div onclick="window.showDay('${dk}', ${dw})" class="day-card ${has?'bg-slate-50 text-slate-800 font-bold':'text-slate-200'} ${isP?'is-present':''} ${isA?'is-absent':''} ${isC?'is-cancelled':''} ${dk===todayKey?'today':''}">${d}</div>`;
+                // FIX: dias sem aula usam classe 'no-class' com borda visível
+                cal.innerHTML += `<div onclick="window.showDay('${dk}', ${dw})" class="day-card ${has?'bg-slate-50 text-slate-800 font-bold':'no-class'} ${isP?'is-present':''} ${isA?'is-absent':''} ${isC?'is-cancelled':''} ${dk===todayKey?'today':''}">${d}</div>`;
             }
             lucide.createIcons();
         }
