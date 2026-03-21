@@ -12,25 +12,26 @@
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); }
         .day-card { aspect-ratio: 1/1; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.875rem; transition: 0.2s; cursor: pointer; border: 1px solid transparent; }
         
-        /* Cores de Status */
-        .is-present { background-color: #eff6ff !important; color: #2563eb !important; font-weight: 800; border: 1px solid #bfdbfe !important; }
-        .is-absent { background-color: #fee2e2 !important; color: #ef4444 !important; font-weight: 800; border: 1px solid #fca5a5 !important; }
-        .is-cancelled { border: 1px dashed #475569 !important; color: #475569; background-color: #e2e8f0; font-weight: 700; }
-        .no-class { background-color: #f8fafc; border: 1px solid #e2e8f0 !important; color: #cbd5e1; }
-        .today { outline: 2px solid #2563eb; outline-offset: 1px; border-radius: 12px; }
-        
+        .is-present   { background-color: #eff6ff !important; color: #2563eb !important; font-weight: 800; border: 1px solid #bfdbfe !important; }
+        .is-absent    { background-color: #fdf0f0 !important; color: #E05252 !important; font-weight: 800; border: 1px solid #f0b8b8 !important; }
+        .is-cancelled { background-color: #e2e8f0 !important; color: #94a3b8 !important; font-weight: 700; border: 1px solid #cbd5e1 !important; }
+        .no-class     { background-color: #f8fafc; border: 1px solid #f1f5f9 !important; color: #cbd5e1; }
+        .today        { outline: 2px solid #2563eb; outline-offset: 1px; border-radius: 12px; }
+
+        .mix-present-absent    { background: linear-gradient(135deg, #eff6ff 50%, #fdf0f0 50%) !important; color: #64748b !important; font-weight: 800; border: 1px solid #e2e8f0 !important; }
+        .mix-present-cancelled { background: linear-gradient(135deg, #eff6ff 50%, #e2e8f0 50%) !important; color: #64748b !important; font-weight: 800; border: 1px solid #e2e8f0 !important; }
+        .mix-absent-cancelled  { background: linear-gradient(135deg, #fdf0f0 50%, #e2e8f0 50%) !important; color: #64748b !important; font-weight: 800; border: 1px solid #e2e8f0 !important; }
+
         @media (min-width: 768px) {
             .tab-content { display: block !important; }
             nav.mobile-nav { display: none; }
             .desktop-grid { display: grid; grid-template-columns: 1fr 350px; gap: 2rem; }
         }
-        
         @media (max-width: 767px) {
             .tab-content { display: none; }
             .tab-active { display: block; animation: fadeIn 0.3s ease forwards; }
             .nav-active { color: #2563eb !important; }
         }
-
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; } }
     </style>
 </head>
@@ -42,7 +43,6 @@
     </div>
 
     <div class="max-w-6xl mx-auto px-4 pt-6 md:pt-12">
-        
         <header class="flex justify-between items-center mb-8 md:mb-12">
             <div>
                 <h1 class="text-2xl md:text-4xl font-800 tracking-tighter italic uppercase text-slate-900 leading-none">Academic<span class="text-blue-600">Flow</span></h1>
@@ -68,7 +68,6 @@
                     </h2>
                     <div class="bg-white p-6 rounded-[2rem] shadow-xl shadow-slate-200/50 border border-white">
                         <div class="flex justify-between items-center mb-8">
-                            <!-- FIX: removido 'capitalize' para não forçar maiúsculo em cada palavra -->
                             <h3 id="monthDisplay" class="font-800 text-xl text-slate-800"></h3>
                             <div class="flex gap-2">
                                 <button onclick="changeMonth(-1)" class="p-2 hover:bg-slate-50 rounded-xl transition text-slate-400"><i data-lucide="chevron-left"></i></button>
@@ -99,21 +98,22 @@
         </div>
     </div>
 
-    <nav class="mobile-nav fixed bottom-6 left-6 right-6 bg-slate-900/95 backdrop-blur-md rounded-full px-8 py-4 flex justify-between items-center z-40 shadow-2xl shadow-blue-900/20">
-        <button onclick="switchTab('summary', this)" class="flex flex-col items-center gap-1 text-slate-500 nav-active">
+    <!-- Menu claro com borda sutil -->
+    <nav class="mobile-nav fixed bottom-6 left-6 right-6 bg-white/90 backdrop-blur-md rounded-full px-8 py-4 flex justify-between items-center z-40 shadow-xl shadow-slate-200/80 border border-slate-100">
+        <button onclick="switchTab('summary', this)" class="flex flex-col items-center gap-1 text-slate-300 nav-active">
             <i data-lucide="layout-grid" class="w-5 h-5"></i>
         </button>
-        <button onclick="switchTab('calendar', this)" class="flex flex-col items-center gap-1 text-slate-500">
+        <button onclick="switchTab('calendar', this)" class="flex flex-col items-center gap-1 text-slate-300">
             <i data-lucide="calendar" class="w-5 h-5"></i>
         </button>
-        <button id="todayBtn" onclick="switchTab('today', this)" class="flex flex-col items-center gap-1 text-slate-500">
+        <button id="todayBtn" onclick="switchTab('today', this)" class="flex flex-col items-center gap-1 text-slate-300">
             <i data-lucide="check-square" class="w-5 h-5"></i>
         </button>
     </nav>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, updateDoc, deleteField, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyC9W4W6bDdH6p2GLi_TwG2XDd0yPNH8SEQ",
@@ -138,6 +138,7 @@
 
         onSnapshot(doc(db, "users", "renato"), (snap) => {
             if (snap.exists()) statusData = snap.data().absences || {};
+            else statusData = {};
             renderAll();
             document.getElementById('loader').style.opacity = '0';
             setTimeout(() => document.getElementById('loader').style.display = 'none', 500);
@@ -155,11 +156,19 @@
 
         window.setStatus = async (date, subId, status, btn) => {
             btn.innerHTML = `<span class="animate-pulse">...</span>`;
-            if (!statusData[date]) statusData[date] = {};
-            statusData[date][subId] === status ? delete statusData[date][subId] : statusData[date][subId] = status;
-            if (Object.keys(statusData[date]).length === 0) delete statusData[date];
-            await setDoc(doc(db, "users", "renato"), { absences: statusData }, { merge: true });
-            window.showDay(date, new Date(date + 'T12:00:00').getDay());
+
+            const isToggleOff = statusData[date]?.[subId] === status;
+            const docRef = doc(db, "users", "renato");
+
+            if (isToggleOff) {
+                await updateDoc(docRef, {
+                    [`absences.${date}.${subId}`]: deleteField()
+                });
+            } else {
+                await setDoc(docRef, {
+                    absences: { [date]: { [subId]: status } }
+                }, { merge: true });
+            }
         };
 
         window.changeMonth = (s) => { currentDate.setMonth(currentDate.getMonth() + s); renderAll(); };
@@ -185,8 +194,8 @@
                             <h4 class="text-xs font-bold text-slate-700 mb-5 leading-snug">${subjects[id].name}</h4>
                             <div class="grid grid-cols-3 gap-1">
                                 <button onclick="window.setStatus('${dateKey}', '${id}', 'present', this)" class="py-2.5 rounded-xl text-[9px] font-800 border transition ${st==='present'?'bg-blue-600 text-white border-blue-600':'bg-white text-blue-600 border-blue-50'}">PRESENTE</button>
-                                <button onclick="window.setStatus('${dateKey}', '${id}', 'absent', this)" class="py-2.5 rounded-xl text-[9px] font-800 border transition ${st==='absent'?'bg-red-500 text-white border-red-500':'bg-white text-red-500 border-red-50'}">FALTEI</button>
-                                <button onclick="window.setStatus('${dateKey}', '${id}', 'cancelled', this)" class="py-2.5 rounded-xl text-[9px] font-800 border transition ${st==='cancelled'?'bg-slate-700 text-white border-slate-700':'bg-white text-slate-400 border-slate-50'}">OFF</button>
+                                <button onclick="window.setStatus('${dateKey}', '${id}', 'absent', this)" class="py-2.5 rounded-xl text-[9px] font-800 border transition ${st==='absent'?'bg-[#E05252] text-white border-[#E05252]':'bg-white text-[#E05252] border-[#fdf0f0]'}">FALTEI</button>
+                                <button onclick="window.setStatus('${dateKey}', '${id}', 'cancelled', this)" class="py-2.5 rounded-xl text-[9px] font-800 border transition ${st==='cancelled'?'bg-slate-400 text-white border-slate-400':'bg-white text-slate-400 border-slate-100'}">CANCELADA</button>
                             </div>
                         </div>`;
                 }
@@ -199,13 +208,27 @@
             lucide.createIcons();
         };
 
+        function getDayClass(st) {
+            const vals = Object.values(st);
+            const hasP = vals.includes('present');
+            const hasA = vals.includes('absent');
+            const hasC = vals.includes('cancelled');
+
+            if (hasP && hasA)          return 'mix-present-absent';
+            if (hasP && hasC && !hasA) return 'mix-present-cancelled';
+            if (hasA && hasC && !hasP) return 'mix-absent-cancelled';
+            if (hasP) return 'is-present';
+            if (hasA) return 'is-absent';
+            if (hasC) return 'is-cancelled';
+            return '';
+        }
+
         function renderAll() {
             const sumContainer = document.getElementById('summary-container');
             sumContainer.innerHTML = '';
             Object.keys(subjects).forEach(id => {
                 const faults = Object.values(statusData).filter(d => d[id] === 'absent').length;
-                // FIX: removido truncate e max-w para nome completo da matéria
-                sumContainer.innerHTML += `<div class="bg-white p-5 rounded-3xl border border-white flex justify-between items-center shadow-xl shadow-slate-200/50"><div class="flex-1 mr-4"><p class="text-[9px] font-black text-slate-300 uppercase leading-none mb-1">${id}</p><h4 class="text-xs font-bold text-slate-800 leading-snug">${subjects[id].name}</h4></div><div class="text-2xl font-800 shrink-0 ${faults>4?'text-red-500':'text-blue-600'}">${faults}</div></div>`;
+                sumContainer.innerHTML += `<div class="bg-white p-5 rounded-3xl border border-white flex justify-between items-center shadow-xl shadow-slate-200/50"><div class="flex-1 mr-4"><p class="text-[9px] font-black text-slate-300 uppercase leading-none mb-1">${id}</p><h4 class="text-xs font-bold text-slate-800 leading-snug">${subjects[id].name}</h4></div><div class="text-2xl font-800 shrink-0 ${faults>4?'text-[#E05252]':'text-blue-600'}">${faults}</div></div>`;
             });
 
             const cal = document.getElementById('calendarDays');
@@ -213,7 +236,6 @@
             cal.innerHTML = '';
             const y = currentDate.getFullYear(), m = currentDate.getMonth();
 
-            // FIX: capitaliza só o primeiro caractere, "de" permanece minúsculo
             const raw = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(currentDate);
             disp.innerText = raw.charAt(0).toUpperCase() + raw.slice(1);
 
@@ -226,9 +248,9 @@
                 const dw = new Date(y,m,d).getDay();
                 let has = false; Object.values(subjects).forEach(s => { if(s.days.includes(dw)) has=true; });
                 const st = statusData[dk] || {};
-                const isP = Object.values(st).includes('present'), isA = Object.values(st).includes('absent'), isC = Object.values(st).includes('cancelled') && !isA && !isP;
-                // FIX: dias sem aula usam classe 'no-class' com borda visível
-                cal.innerHTML += `<div onclick="window.showDay('${dk}', ${dw})" class="day-card ${has?'bg-slate-50 text-slate-800 font-bold':'no-class'} ${isP?'is-present':''} ${isA?'is-absent':''} ${isC?'is-cancelled':''} ${dk===todayKey?'today':''}">${d}</div>`;
+                const statusClass = Object.keys(st).length > 0 ? getDayClass(st) : '';
+                const baseClass = has ? 'bg-slate-50 text-slate-800 font-bold' : 'no-class';
+                cal.innerHTML += `<div onclick="window.showDay('${dk}', ${dw})" class="day-card ${statusClass || baseClass} ${dk===todayKey?'today':''}">${d}</div>`;
             }
             lucide.createIcons();
         }
