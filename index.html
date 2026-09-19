@@ -45,7 +45,7 @@
     <div class="max-w-6xl mx-auto px-4 pt-6 md:pt-12">
         <header class="flex justify-between items-center mb-8 md:mb-12">
             <div>
-                <h1 class="text-2xl md:text-4xl font-800 tracking-tighter italic uppercase text-slate-900 leading-none">Academic<span class="text-blue-600">Flow</span></h1>
+                <h1 class="text-2xl md:text-4xl font-extrabold tracking-tighter italic uppercase text-slate-900 leading-none">Academic<span class="text-blue-600">Flow</span></h1>
                 <p class="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-widest mt-2">Dashboard • Renato</p>
             </div>
             <div class="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center text-white shadow-lg">
@@ -68,7 +68,7 @@
                     </h2>
                     <div class="bg-white p-6 rounded-[2rem] shadow-xl shadow-slate-200/50 border border-white">
                         <div class="flex justify-between items-center mb-8">
-                            <h3 id="monthDisplay" class="font-800 text-xl text-slate-800"></h3>
+                            <h3 id="monthDisplay" class="font-extrabold text-xl text-slate-800"></h3>
                             <div class="flex gap-2">
                                 <button onclick="changeMonth(-1)" class="p-2 hover:bg-slate-50 rounded-xl transition text-slate-400"><i data-lucide="chevron-left"></i></button>
                                 <button onclick="changeMonth(1)" class="p-2 hover:bg-slate-50 rounded-xl transition text-slate-400"><i data-lucide="chevron-right"></i></button>
@@ -136,6 +136,7 @@
 
         let statusData = {};
         let currentDate = new Date();
+        let selectedDay = null;
 
         onSnapshot(doc(db, "users", "renato"), (snap) => {
             if (snap.exists()) statusData = snap.data().absences || {};
@@ -161,25 +162,43 @@
             const isToggleOff = statusData[date]?.[subId] === status;
             const docRef = doc(db, "users", "renato");
 
-            if (isToggleOff) {
-                await updateDoc(docRef, {
-                    [`absences.${date}.${subId}`]: deleteField()
-                });
-            } else {
-                await setDoc(docRef, {
-                    absences: { [date]: { [subId]: status } }
-                }, { merge: true });
+            try {
+                if (isToggleOff) {
+                    await updateDoc(docRef, {
+                        [`absences.${date}.${subId}`]: deleteField()
+                    });
+                } else {
+                    await setDoc(docRef, {
+                        absences: { [date]: { [subId]: status } }
+                    }, { merge: true });
+                }
+            } catch (e) {
+                renderDayDetails();
+                showSyncError();
             }
         };
 
-        window.changeMonth = (s) => { currentDate.setMonth(currentDate.getMonth() + s); renderAll(); };
+        window.changeMonth = (s) => { currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + s, 1); renderAll(); };
 
         window.showDay = (dateKey, dayOfWeek) => {
+            selectedDay = { dateKey, dayOfWeek };
+            renderDayDetails();
+            if (window.innerWidth < 768) window.switchTab('today', document.getElementById('todayBtn'));
+        };
+
+        function showSyncError() {
+            document.getElementById('dayDetails').insertAdjacentHTML('afterbegin',
+                `<div class="mb-4 p-3 rounded-2xl bg-[#fdf0f0] border border-[#f0b8b8] text-[10px] font-black uppercase tracking-widest text-[#E05252] text-center">Falha ao sincronizar</div>`);
+        }
+
+        function renderDayDetails() {
+            if (!selectedDay) return;
+            const { dateKey, dayOfWeek } = selectedDay;
             const container = document.getElementById('dayDetails');
             const dateFmt = dateKey.split('-').reverse().join('/');
             const dayName = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"][dayOfWeek];
             
-            let html = `<div class="mb-6"><h3 class="text-xl font-800">${dateFmt}</h3><p class="text-[10px] font-black uppercase text-blue-600">${dayName}</p></div><div class="space-y-4">`;
+            let html = `<div class="mb-6"><h3 class="text-xl font-extrabold">${dateFmt}</h3><p class="text-[10px] font-black uppercase text-blue-600">${dayName}</p></div><div class="space-y-4">`;
             let found = false;
 
             Object.keys(subjects).forEach(id => {
@@ -194,9 +213,9 @@
                             </div>
                             <h4 class="text-xs font-bold text-slate-700 mb-5 leading-snug">${subjects[id].name}</h4>
                             <div class="grid grid-cols-3 gap-1">
-                                <button onclick="window.setStatus('${dateKey}', '${id}', 'present', this)" class="py-2.5 rounded-xl text-[9px] font-800 border transition ${st==='present'?'bg-blue-600 text-white border-blue-600':'bg-white text-blue-600 border-blue-50'}">PRESENTE</button>
-                                <button onclick="window.setStatus('${dateKey}', '${id}', 'absent', this)" class="py-2.5 rounded-xl text-[9px] font-800 border transition ${st==='absent'?'bg-[#E05252] text-white border-[#E05252]':'bg-white text-[#E05252] border-[#fdf0f0]'}">FALTEI</button>
-                                <button onclick="window.setStatus('${dateKey}', '${id}', 'cancelled', this)" class="py-2.5 rounded-xl text-[9px] font-800 border transition ${st==='cancelled'?'bg-slate-400 text-white border-slate-400':'bg-white text-slate-400 border-slate-100'}">CANCELADA</button>
+                                <button onclick="window.setStatus('${dateKey}', '${id}', 'present', this)" class="py-2.5 rounded-xl text-[9px] font-extrabold border transition ${st==='present'?'bg-blue-600 text-white border-blue-600':'bg-white text-blue-600 border-blue-50'}">PRESENTE</button>
+                                <button onclick="window.setStatus('${dateKey}', '${id}', 'absent', this)" class="py-2.5 rounded-xl text-[9px] font-extrabold border transition ${st==='absent'?'bg-[#E05252] text-white border-[#E05252]':'bg-white text-[#E05252] border-[#fdf0f0]'}">FALTEI</button>
+                                <button onclick="window.setStatus('${dateKey}', '${id}', 'cancelled', this)" class="py-2.5 rounded-xl text-[9px] font-extrabold border transition ${st==='cancelled'?'bg-slate-400 text-white border-slate-400':'bg-white text-slate-400 border-slate-100'}">CANCELADA</button>
                             </div>
                         </div>`;
                 }
@@ -205,9 +224,8 @@
             if(!found) html = `<div class="py-20 text-center opacity-30"><i data-lucide="coffee" class="w-10 h-10 mx-auto mb-2"></i><p class="text-[10px] font-bold uppercase tracking-widest">Sem Aulas</p></div>`;
             
             container.innerHTML = html + `</div>`;
-            if (window.innerWidth < 768) window.switchTab('today', document.getElementById('todayBtn'));
             lucide.createIcons();
-        };
+        }
 
         function getDayClass(st) {
             const vals = Object.values(st);
@@ -229,7 +247,7 @@
             sumContainer.innerHTML = '';
             Object.keys(subjects).forEach(id => {
                 const faults = Object.values(statusData).filter(d => d[id] === 'absent').length;
-                sumContainer.innerHTML += `<div class="bg-white p-5 rounded-3xl border border-white flex justify-between items-center shadow-xl shadow-slate-200/50"><div class="flex-1 mr-4"><p class="text-[9px] font-black text-slate-300 uppercase leading-none mb-1">${id}</p><h4 class="text-xs font-bold text-slate-800 leading-snug">${subjects[id].name}</h4></div><div class="text-2xl font-800 shrink-0 ${faults>4?'text-[#E05252]':'text-blue-600'}">${faults}</div></div>`;
+                sumContainer.innerHTML += `<div class="bg-white p-5 rounded-3xl border border-white flex justify-between items-center shadow-xl shadow-slate-200/50"><div class="flex-1 mr-4"><p class="text-[9px] font-black text-slate-300 uppercase leading-none mb-1">${id}</p><h4 class="text-xs font-bold text-slate-800 leading-snug">${subjects[id].name}</h4></div><div class="text-2xl font-extrabold shrink-0 ${faults>4?'text-[#E05252]':'text-blue-600'}">${faults}</div></div>`;
             });
 
             const cal = document.getElementById('calendarDays');
@@ -253,6 +271,7 @@
                 const baseClass = has ? 'bg-slate-50 text-slate-800 font-bold' : 'no-class';
                 cal.innerHTML += `<div onclick="window.showDay('${dk}', ${dw})" class="day-card ${statusClass || baseClass} ${dk===todayKey?'today':''}">${d}</div>`;
             }
+            renderDayDetails();
             lucide.createIcons();
         }
     </script>
