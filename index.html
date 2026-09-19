@@ -113,6 +113,10 @@
                                     <button id="evtTypeProva" onclick="window.setEvtType('prova')" class="py-2.5 rounded-xl text-[9px] font-extrabold border transition">PROVA</button>
                                     <button id="evtTypeTrabalho" onclick="window.setEvtType('trabalho')" class="py-2.5 rounded-xl text-[9px] font-extrabold border transition">TRABALHO</button>
                                 </div>
+                                <div class="relative">
+                                    <select id="evtSubject" class="w-full appearance-none pl-4 pr-9 py-2.5 rounded-xl border border-slate-100 bg-white text-xs font-bold text-slate-700 outline-none focus:border-blue-200 cursor-pointer"></select>
+                                    <span class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 pointer-events-none flex"><i data-lucide="chevron-down" class="w-3.5 h-3.5"></i></span>
+                                </div>
                                 <input id="evtDesc" type="text" maxlength="80" placeholder="Descrição (opcional)" onkeydown="if(event.key==='Enter') window.addEvent()" class="w-full px-4 py-2.5 rounded-xl border border-slate-100 bg-white text-xs font-bold text-slate-700 placeholder:text-slate-300 placeholder:font-normal outline-none focus:border-blue-200">
                                 <button id="evtAdd" onclick="window.addEvent()" class="w-full py-2.5 rounded-xl bg-blue-600 text-white text-[9px] font-extrabold transition">ADICIONAR</button>
                             </div>
@@ -175,6 +179,10 @@
         const keyOfToday = () => { const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`; };
         const fmtDate = (dk) => dk.split('-').reverse().join('/');
 
+        document.getElementById('evtSubject').innerHTML =
+            `<option value="">Sem matéria</option>` +
+            Object.keys(subjects).map(id => `<option value="${id}">${id} — ${subjects[id].name}</option>`).join('');
+
         onSnapshot(doc(db, "users", "renato"), (snap) => {
             const data = snap.exists() ? snap.data() : {};
             statusData = data.absences || {};
@@ -220,7 +228,10 @@
             const f = document.getElementById('evtFields');
             f.classList.toggle('hidden');
             document.getElementById('evtToggle').innerText = f.classList.contains('hidden') ? '+ EVENTO' : 'CANCELAR';
-            if (!f.classList.contains('hidden')) document.getElementById('evtDesc').focus();
+            if (!f.classList.contains('hidden')) {
+                document.getElementById('evtDesc').focus();
+                if (window.innerWidth < 768) f.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
         };
 
         window.setEvtType = (t) => {
@@ -242,12 +253,13 @@
             const input = document.getElementById('evtDesc');
             const btn = document.getElementById('evtAdd');
             const desc = input.value.trim();
+            const subject = document.getElementById('evtSubject').value;
             const id = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now())).slice(0, 8);
 
             btn.innerHTML = `<span class="animate-pulse">...</span>`;
             try {
                 await setDoc(doc(db, "users", "renato"), {
-                    events: { [selectedDay.dateKey]: { [id]: { type: evtType, desc } } }
+                    events: { [selectedDay.dateKey]: { [id]: { type: evtType, desc, subject } } }
                 }, { merge: true });
                 input.value = '';
                 window.toggleEvtForm();
@@ -295,6 +307,7 @@
             return `<div class="flex items-center justify-between gap-2 py-2">
                         <div class="flex items-center gap-2 min-w-0">
                             <span class="text-[9px] font-black uppercase px-2 py-1 rounded-lg shrink-0" style="color:${color};background:${bg}">${label}</span>
+                            ${ev.subject && subjects[ev.subject] ? `<span class="text-[9px] font-black uppercase text-slate-300 shrink-0">${ev.subject}</span>` : ''}
                             ${ev.desc ? `<span class="text-xs font-bold text-slate-700 truncate">${esc(ev.desc)}</span>` : ''}
                         </div>${del}
                     </div>`;
