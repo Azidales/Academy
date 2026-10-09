@@ -1,0 +1,56 @@
+@media (max-width: 767px) {
+    body { padding-bottom: 88px; }
+    .app-main { padding: 18px 14px 28px; }
+    .topbar { display: block; margin-bottom: 18px; }
+    .topbar-kicker { display: none; }
+    .topbar h1 { font-size: 25px; }
+    .topbar-subtitle { font-size: 11px; line-height: 1.45; }
+    .topbar-date { display: none; }
+    .mobile-brand-row { margin-bottom: 18px; }
+    .dashboard-layout { display: block; }
+    .main-column, .right-column { display: block; }
+    .tab-content { display: none; }
+    .tab-content.tab-active { display: block; animation: fadeIn .22s ease both; }
+    .desktop-context-only { display: none !important; }
+    .dashboard-section { margin-bottom: 0; }
+    .section-heading { margin-bottom: 10px; }
+    .section-heading h2 { font-size: 17px; }
+    .muted-note { max-width: 145px; }
+    .calendar-panel { padding: 13px 10px 12px; border-radius: 21px; }
+    .calendar-toolbar { margin-bottom: 14px; }
+    .month-control { width: 100%; justify-content: space-between; }
+    .month-control h3 { min-width: 0; font-size: 16px; }
+    .calendar-legend { display: none; }
+    .calendar-grid { gap: 4px; }
+    .calendar-weekdays { font-size: 8px; }
+    .day-card, .calendar-spacer { aspect-ratio: 1 / 1; }
+    .day-card { border-radius: 10px; gap: 3px; }
+    .day-number { font-size: 11px; }
+    .evt-dot { width: 4px; height: 4px; }
+    .subject-card { padding: 13px 12px; grid-template-columns: 4px minmax(0,1fr) auto; gap: 10px; }
+    .subject-rate { min-width: 82px; }
+    .progress-track { width: 82px; }
+    .subject-name { font-size: 11px; }
+    .day-panel { border-radius: 21px; }
+    .mobile-nav { position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: 50; min-height: 64px; padding: 6px 7px; border: 1px solid rgba(219,229,242,.9); border-radius: 21px; background: rgba(255,255,255,.93); backdrop-filter: blur(16px); display: grid; grid-template-columns: repeat(4,1fr); box-shadow: 0 12px 35px rgba(46,70,116,.16); }
+    .mobile-nav button { border: 0; border-radius: 14px; background: transparent; color: #a1adc2; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 8px; font-weight: 700; }
+    .mobile-nav button svg { width: 17px; height: 17px; }
+    .mobile-nav button.nav-active { color: var(--primary); background: var(--primary-soft); }
+}
+
+@media (max-width: 380px) {
+    .app-main { padding-left: 10px; padding-right: 10px; }
+    .calendar-panel { padding-left: 7px; padding-right: 7px; }
+    .calendar-grid { gap: 3px; }
+    .subject-rate { min-width: 70px; }
+    .progress-track { width: 70px; }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(7px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}

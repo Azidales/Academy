@@ -1,32 +1,4 @@
-body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
-        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); }
-        .day-card { width: 100%; aspect-ratio: 1/1; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.875rem; transition: 0.2s; cursor: pointer; border: 1px solid transparent; appearance: none; font-family: inherit; }
-        
-        .is-present   { background-color: #eff6ff !important; color: #2563eb !important; font-weight: 800; border: 1px solid #bfdbfe !important; }
-        .is-absent    { background-color: #fdf0f0 !important; color: #E05252 !important; font-weight: 800; border: 1px solid #f0b8b8 !important; }
-        .is-cancelled { background-color: #e2e8f0 !important; color: #94a3b8 !important; font-weight: 700; border: 1px solid #cbd5e1 !important; }
-        .no-class     { background-color: #f8fafc; border: 1px solid #f1f5f9 !important; color: #cbd5e1; }
-        .today        { outline: 2px solid #2563eb; outline-offset: 1px; border-radius: 12px; }
-
-        .evt-dots { display: flex; gap: 3px; height: 5px; margin-top: 4px; }
-        .evt-dot { width: 5px; height: 5px; border-radius: 50%; }
-        .evt-prova { background-color: #E05252; }
-        .evt-trabalho { background-color: #f59e0b; }
-        .evt-generic { background-color: #64748b; }
-
-        .mix-present-absent    { background: linear-gradient(135deg, #eff6ff 50%, #fdf0f0 50%) !important; color: #64748b !important; font-weight: 800; border: 1px solid #e2e8f0 !important; }
-        .mix-present-cancelled { background: linear-gradient(135deg, #eff6ff 50%, #e2e8f0 50%) !important; color: #64748b !important; font-weight: 800; border: 1px solid #e2e8f0 !important; }
-        .mix-absent-cancelled  { background: linear-gradient(135deg, #fdf0f0 50%, #e2e8f0 50%) !important; color: #64748b !important; font-weight: 800; border: 1px solid #e2e8f0 !important; }
-        .mix-all               { background: linear-gradient(135deg, #eff6ff 0 33%, #fdf0f0 33% 66%, #e2e8f0 66% 100%) !important; color: #475569 !important; font-weight: 800; border: 1px solid #cbd5e1 !important; }
-
-        @media (min-width: 768px) {
-            .tab-content { display: block !important; }
-            nav.mobile-nav { display: none; }
-            .desktop-grid { display: grid; grid-template-columns: 1fr 350px; gap: 2rem; }
-        }
-        @media (max-width: 767px) {
-            .tab-content { display: none; }
-            .tab-active { display: block; animation: fadeIn 0.3s ease forwards; }
-            .nav-active { color: #2563eb !important; }
-        }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; } }
+@import url('./styles/base.css');
+@import url('./styles/calendar.css');
+@import url('./styles/components.css');
+@import url('./styles/responsive.css');

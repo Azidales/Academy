@@ -1,10 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+    aggregateAttendanceStats,
     countAbsences,
+    countEvents,
     formatDateKey,
     getDayClass,
     normaliseRecord,
+    subjectAttendanceStats,
     todayKey,
     upcomingEventDates
 } from '../app-logic.js';
@@ -25,6 +28,40 @@ test('countAbsences conta apenas ausências da matéria', () => {
     };
     assert.equal(countAbsences(data, 'SE620'), 2);
     assert.equal(countAbsences(data, 'SE621A'), 1);
+});
+
+test('subjectAttendanceStats ignora canceladas no percentual', () => {
+    const data = {
+        a: { SE620: 'present' },
+        b: { SE620: 'present' },
+        c: { SE620: 'absent' },
+        d: { SE620: 'cancelled' }
+    };
+    assert.deepEqual(subjectAttendanceStats(data, 'SE620'), {
+        present: 2,
+        absent: 1,
+        cancelled: 1,
+        recorded: 3,
+        rate: 67
+    });
+});
+
+test('aggregateAttendanceStats soma todos os registros', () => {
+    const data = {
+        a: { X: 'present', Y: 'absent' },
+        b: { X: 'cancelled', Y: 'present' }
+    };
+    assert.deepEqual(aggregateAttendanceStats(data), {
+        present: 2,
+        absent: 1,
+        cancelled: 1,
+        recorded: 3,
+        rate: 67
+    });
+});
+
+test('countEvents conta eventos aninhados por data', () => {
+    assert.equal(countEvents({ a: { x: {}, y: {} }, b: { z: {} }, c: null }), 3);
 });
 
 test('getDayClass representa combinações de status', () => {
