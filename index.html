@@ -2,47 +2,16 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Academic Flow - Renato</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/lucide@1.52.0"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
-        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); }
-        .day-card { aspect-ratio: 1/1; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.875rem; transition: 0.2s; cursor: pointer; border: 1px solid transparent; }
-        
-        .is-present   { background-color: #eff6ff !important; color: #2563eb !important; font-weight: 800; border: 1px solid #bfdbfe !important; }
-        .is-absent    { background-color: #fdf0f0 !important; color: #E05252 !important; font-weight: 800; border: 1px solid #f0b8b8 !important; }
-        .is-cancelled { background-color: #e2e8f0 !important; color: #94a3b8 !important; font-weight: 700; border: 1px solid #cbd5e1 !important; }
-        .no-class     { background-color: #f8fafc; border: 1px solid #f1f5f9 !important; color: #cbd5e1; }
-        .today        { outline: 2px solid #2563eb; outline-offset: 1px; border-radius: 12px; }
-
-        .evt-dots { display: flex; gap: 3px; height: 5px; margin-top: 4px; }
-        .evt-dot { width: 5px; height: 5px; border-radius: 50%; }
-        .evt-prova { background-color: #E05252; }
-        .evt-trabalho { background-color: #f59e0b; }
-
-        .mix-present-absent    { background: linear-gradient(135deg, #eff6ff 50%, #fdf0f0 50%) !important; color: #64748b !important; font-weight: 800; border: 1px solid #e2e8f0 !important; }
-        .mix-present-cancelled { background: linear-gradient(135deg, #eff6ff 50%, #e2e8f0 50%) !important; color: #64748b !important; font-weight: 800; border: 1px solid #e2e8f0 !important; }
-        .mix-absent-cancelled  { background: linear-gradient(135deg, #fdf0f0 50%, #e2e8f0 50%) !important; color: #64748b !important; font-weight: 800; border: 1px solid #e2e8f0 !important; }
-
-        @media (min-width: 768px) {
-            .tab-content { display: block !important; }
-            nav.mobile-nav { display: none; }
-            .desktop-grid { display: grid; grid-template-columns: 1fr 350px; gap: 2rem; }
-        }
-        @media (max-width: 767px) {
-            .tab-content { display: none; }
-            .tab-active { display: block; animation: fadeIn 0.3s ease forwards; }
-            .nav-active { color: #2563eb !important; }
-        }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; } }
-    </style>
+        <link rel="stylesheet" href="./styles.css">
 </head>
 <body class="bg-slate-50 text-slate-900 pb-24 md:pb-10">
 
-    <div id="loader" class="fixed inset-0 bg-white z-50 flex flex-col items-center justify-center transition-opacity duration-500">
+    <div id="loader" role="status" aria-live="polite" class="fixed inset-0 bg-white z-50 flex flex-col items-center justify-center transition-opacity duration-500">
         <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mb-4"></div>
         <p class="text-[10px] font-black uppercase tracking-widest text-slate-400">Sincronizando Cloud...</p>
     </div>
@@ -75,8 +44,8 @@
                         <div class="flex justify-between items-center mb-8">
                             <h3 id="monthDisplay" class="font-extrabold text-xl text-slate-800"></h3>
                             <div class="flex gap-2">
-                                <button onclick="changeMonth(-1)" class="p-2 hover:bg-slate-50 rounded-xl transition text-slate-400"><i data-lucide="chevron-left"></i></button>
-                                <button onclick="changeMonth(1)" class="p-2 hover:bg-slate-50 rounded-xl transition text-slate-400"><i data-lucide="chevron-right"></i></button>
+                                <button type="button" aria-label="Mês anterior" onclick="changeMonth(-1)" class="p-2 hover:bg-slate-50 rounded-xl transition text-slate-400"><i data-lucide="chevron-left"></i></button>
+                                <button type="button" aria-label="Próximo mês" onclick="changeMonth(1)" class="p-2 hover:bg-slate-50 rounded-xl transition text-slate-400"><i data-lucide="chevron-right"></i></button>
                             </div>
                         </div>
                         <div class="calendar-grid text-center text-[10px] font-black text-slate-300 mb-4 uppercase">
@@ -107,18 +76,18 @@
                             </div>
                         </div>
                         <div id="dayForm" class="hidden mt-5 pt-5 border-t border-slate-100">
-                            <button id="evtToggle" onclick="window.toggleEvtForm()" class="w-full py-2.5 rounded-xl text-[9px] font-extrabold border border-dashed border-slate-200 text-slate-400 transition hover:border-blue-200 hover:text-blue-600">+ EVENTO</button>
+                            <button type="button" id="evtToggle" onclick="window.toggleEvtForm()" class="w-full py-2.5 rounded-xl text-[9px] font-extrabold border border-dashed border-slate-200 text-slate-400 transition hover:border-blue-200 hover:text-blue-600">+ EVENTO</button>
                             <div id="evtFields" class="hidden space-y-2 mt-2">
                                 <div class="grid grid-cols-2 gap-1">
-                                    <button id="evtTypeProva" onclick="window.setEvtType('prova')" class="py-2.5 rounded-xl text-[9px] font-extrabold border transition">PROVA</button>
-                                    <button id="evtTypeTrabalho" onclick="window.setEvtType('trabalho')" class="py-2.5 rounded-xl text-[9px] font-extrabold border transition">TRABALHO</button>
+                                    <button type="button" id="evtTypeProva" onclick="window.setEvtType('prova')" class="py-2.5 rounded-xl text-[9px] font-extrabold border transition">PROVA</button>
+                                    <button type="button" id="evtTypeTrabalho" onclick="window.setEvtType('trabalho')" class="py-2.5 rounded-xl text-[9px] font-extrabold border transition">TRABALHO</button>
                                 </div>
                                 <div class="relative">
                                     <select id="evtSubject" class="w-full appearance-none pl-4 pr-9 py-2.5 rounded-xl border border-slate-100 bg-white text-xs font-bold text-slate-700 outline-none focus:border-blue-200 cursor-pointer"></select>
                                     <span class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 pointer-events-none flex"><i data-lucide="chevron-down" class="w-3.5 h-3.5"></i></span>
                                 </div>
                                 <input id="evtDesc" type="text" maxlength="80" placeholder="Descrição (opcional)" onkeydown="if(event.key==='Enter') window.addEvent()" class="w-full px-4 py-2.5 rounded-xl border border-slate-100 bg-white text-xs font-bold text-slate-700 placeholder:text-slate-300 placeholder:font-normal outline-none focus:border-blue-200">
-                                <button id="evtAdd" onclick="window.addEvent()" class="w-full py-2.5 rounded-xl bg-blue-600 text-white text-[9px] font-extrabold transition">ADICIONAR</button>
+                                <button type="button" id="evtAdd" onclick="window.addEvent()" class="w-full py-2.5 rounded-xl bg-blue-600 text-white text-[9px] font-extrabold transition">ADICIONAR</button>
                             </div>
                         </div>
                     </div>
@@ -129,320 +98,20 @@
 
     <!-- Menu claro com borda sutil -->
     <nav class="mobile-nav fixed bottom-6 left-6 right-6 bg-white/90 backdrop-blur-md rounded-full px-8 py-4 flex justify-between items-center z-40 shadow-xl shadow-slate-200/80 border border-slate-100">
-        <button onclick="switchTab('summary', this)" class="flex flex-col items-center gap-1 text-slate-300 nav-active">
+        <button type="button" aria-label="Resumo" onclick="switchTab('summary', this)" class="flex flex-col items-center gap-1 text-slate-300 nav-active">
             <i data-lucide="layout-grid" class="w-5 h-5"></i>
         </button>
-        <button onclick="switchTab('calendar', this)" class="flex flex-col items-center gap-1 text-slate-300">
+        <button type="button" aria-label="Calendário" onclick="switchTab('calendar', this)" class="flex flex-col items-center gap-1 text-slate-300">
             <i data-lucide="calendar" class="w-5 h-5"></i>
         </button>
-        <button onclick="switchTab('agenda', this)" class="flex flex-col items-center gap-1 text-slate-300">
+        <button type="button" aria-label="Agenda" onclick="switchTab('agenda', this)" class="flex flex-col items-center gap-1 text-slate-300">
             <i data-lucide="calendar-clock" class="w-5 h-5"></i>
         </button>
-        <button id="todayBtn" onclick="switchTab('today', this)" class="flex flex-col items-center gap-1 text-slate-300">
+        <button type="button" aria-label="Registro de presença" id="todayBtn" onclick="switchTab('today', this)" class="flex flex-col items-center gap-1 text-slate-300">
             <i data-lucide="check-square" class="w-5 h-5"></i>
         </button>
     </nav>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, doc, setDoc, updateDoc, deleteField, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyC9W4W6bDdH6p2GLi_TwG2XDd0yPNH8SEQ",
-            authDomain: "academic-flow-3a2ef.firebaseapp.com",
-            projectId: "academic-flow-3a2ef",
-            storageBucket: "academic-flow-3a2ef.firebasestorage.app",
-            messagingSenderId: "469639047695",
-            appId: "1:469639047695:web:358d524690e08be504917a"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-
-        const subjects = {
-            "SE621A": { name: "Economia Industrial", days: [1, 4], start: {1: "19:00", 4: "21:00"} },
-            "SE620": { name: "Economia do Setor Público", days: [1, 3], start: {1: "21:00", 3: "19:00"} },
-            "SE623": { name: "Economia Internacional II", days: [2, 5], start: {2: "19:00", 5: "21:00"} },
-            "SE622": { name: "Elaboração e Análise de Projetos II", days: [2, 4], start: {2: "21:00", 4: "19:00"} }
-        };
-
-        const DAY_NAMES = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
-        const EVT_TYPES = { prova: "Prova", trabalho: "Trabalho" };
-
-        let statusData = {};
-        let eventsData = {};
-        let currentDate = new Date();
-        let selectedDay = null;
-        let evtType = 'prova';
-
-        const esc = (t) => String(t).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
-        const keyOfToday = () => { const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`; };
-        const fmtDate = (dk) => dk.split('-').reverse().join('/');
-
-        document.getElementById('evtSubject').innerHTML =
-            `<option value="">Sem matéria</option>` +
-            Object.keys(subjects).map(id => `<option value="${id}">${id} — ${subjects[id].name}</option>`).join('');
-
-        onSnapshot(doc(db, "users", "renato"), (snap) => {
-            const data = snap.exists() ? snap.data() : {};
-            statusData = data.absences || {};
-            eventsData = data.events || {};
-            renderAll();
-            document.getElementById('loader').style.opacity = '0';
-            setTimeout(() => document.getElementById('loader').style.display = 'none', 500);
-        });
-
-        window.switchTab = (tabId, btn) => {
-            if (window.innerWidth < 768) {
-                document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('tab-active'));
-                document.getElementById('tab-' + tabId).classList.add('tab-active');
-                document.querySelectorAll('nav button').forEach(b => b.classList.remove('nav-active'));
-                btn.classList.add('nav-active');
-                lucide.createIcons();
-            }
-        };
-
-        window.setStatus = async (date, subId, status, btn) => {
-            btn.innerHTML = `<span class="animate-pulse">...</span>`;
-
-            const isToggleOff = statusData[date]?.[subId] === status;
-            const docRef = doc(db, "users", "renato");
-
-            try {
-                if (isToggleOff) {
-                    await updateDoc(docRef, {
-                        [`absences.${date}.${subId}`]: deleteField()
-                    });
-                } else {
-                    await setDoc(docRef, {
-                        absences: { [date]: { [subId]: status } }
-                    }, { merge: true });
-                }
-            } catch (e) {
-                renderDayDetails();
-                showSyncError();
-            }
-        };
-
-        window.toggleEvtForm = () => {
-            const f = document.getElementById('evtFields');
-            f.classList.toggle('hidden');
-            document.getElementById('evtToggle').innerText = f.classList.contains('hidden') ? '+ EVENTO' : 'CANCELAR';
-            if (!f.classList.contains('hidden')) {
-                document.getElementById('evtDesc').focus();
-                if (window.innerWidth < 768) f.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-        };
-
-        window.setEvtType = (t) => {
-            evtType = t;
-            paintEvtType();
-        };
-
-        function paintEvtType() {
-            const on = { prova: 'bg-[#E05252] text-white border-[#E05252]', trabalho: 'bg-[#f59e0b] text-white border-[#f59e0b]' };
-            const off = { prova: 'bg-white text-[#E05252] border-[#fdf0f0]', trabalho: 'bg-white text-[#f59e0b] border-[#fef3c7]' };
-            for (const t of ['prova', 'trabalho']) {
-                const el = document.getElementById('evtType' + t.charAt(0).toUpperCase() + t.slice(1));
-                el.className = `py-2.5 rounded-xl text-[9px] font-extrabold border transition ${evtType === t ? on[t] : off[t]}`;
-            }
-        }
-
-        window.addEvent = async () => {
-            if (!selectedDay) return;
-            const input = document.getElementById('evtDesc');
-            const btn = document.getElementById('evtAdd');
-            const desc = input.value.trim();
-            const subject = document.getElementById('evtSubject').value;
-            const id = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now())).slice(0, 8);
-
-            btn.innerHTML = `<span class="animate-pulse">...</span>`;
-            try {
-                await setDoc(doc(db, "users", "renato"), {
-                    events: { [selectedDay.dateKey]: { [id]: { type: evtType, desc, subject } } }
-                }, { merge: true });
-                input.value = '';
-                window.toggleEvtForm();
-            } catch (e) {
-                showSyncError();
-            }
-            btn.innerHTML = 'ADICIONAR';
-        };
-
-        window.delEvent = async (dateKey, id) => {
-            try {
-                await updateDoc(doc(db, "users", "renato"), {
-                    [`events.${dateKey}.${id}`]: deleteField()
-                });
-            } catch (e) {
-                showSyncError();
-            }
-        };
-
-        window.changeMonth = (s) => { currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + s, 1); renderAll(); };
-
-        window.showDay = (dateKey, dayOfWeek) => {
-            selectedDay = { dateKey, dayOfWeek };
-            renderDayDetails();
-            if (window.innerWidth < 768) window.switchTab('today', document.getElementById('todayBtn'));
-        };
-
-        function showSyncError() {
-            clearSyncError();
-            document.getElementById('dayDetails').insertAdjacentHTML('afterbegin',
-                `<div id="syncError" class="mb-4 p-3 rounded-2xl bg-[#fdf0f0] border border-[#f0b8b8] text-[10px] font-black uppercase tracking-widest text-[#E05252] text-center">Falha ao sincronizar</div>`);
-        }
-
-        function clearSyncError() {
-            document.getElementById('syncError')?.remove();
-        }
-
-        function evtChip(dateKey, id, ev, removable) {
-            const color = ev.type === 'prova' ? '#E05252' : '#f59e0b';
-            const bg = ev.type === 'prova' ? '#fdf0f0' : '#fffbeb';
-            const label = EVT_TYPES[ev.type] || ev.type;
-            const del = removable
-                ? `<button onclick="window.delEvent('${dateKey}', '${id}')" class="text-slate-300 hover:text-[#E05252] transition shrink-0 p-2"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>`
-                : '';
-            return `<div class="flex items-center justify-between gap-2 py-2">
-                        <div class="flex items-center gap-2 min-w-0">
-                            <span class="text-[9px] font-black uppercase px-2 py-1 rounded-lg shrink-0" style="color:${color};background:${bg}">${label}</span>
-                            ${ev.subject && subjects[ev.subject] ? `<span class="text-[9px] font-black uppercase text-slate-300 shrink-0">${ev.subject}</span>` : ''}
-                            ${ev.desc ? `<span class="text-xs font-bold text-slate-700 truncate">${esc(ev.desc)}</span>` : ''}
-                        </div>${del}
-                    </div>`;
-        }
-
-        function renderDayDetails() {
-            if (!selectedDay) return;
-            clearSyncError();
-            const { dateKey, dayOfWeek } = selectedDay;
-            const container = document.getElementById('dayBody');
-            const dateFmt = fmtDate(dateKey);
-            const dayName = DAY_NAMES[dayOfWeek];
-
-            let html = `<div class="mb-6"><h3 class="text-xl font-extrabold">${dateFmt}</h3><p class="text-[10px] font-black uppercase text-blue-600">${dayName}</p></div><div class="space-y-4">`;
-            let found = false;
-
-            Object.keys(subjects).forEach(id => {
-                if (subjects[id].days.includes(dayOfWeek)) {
-                    found = true;
-                    const st = statusData[dateKey]?.[id];
-                    html += `
-                        <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm">
-                            <div class="flex justify-between items-center mb-4 text-[10px] font-black">
-                                <span class="text-slate-300 uppercase">${id}</span>
-                                <span class="text-blue-600 bg-blue-50 px-2 py-0.5 rounded-lg">${subjects[id].start[dayOfWeek]}h</span>
-                            </div>
-                            <h4 class="text-xs font-bold text-slate-700 mb-5 leading-snug">${subjects[id].name}</h4>
-                            <div class="grid grid-cols-3 gap-1">
-                                <button onclick="window.setStatus('${dateKey}', '${id}', 'present', this)" class="py-2.5 rounded-xl text-[9px] font-extrabold border transition ${st==='present'?'bg-blue-600 text-white border-blue-600':'bg-white text-blue-600 border-blue-50'}">PRESENTE</button>
-                                <button onclick="window.setStatus('${dateKey}', '${id}', 'absent', this)" class="py-2.5 rounded-xl text-[9px] font-extrabold border transition ${st==='absent'?'bg-[#E05252] text-white border-[#E05252]':'bg-white text-[#E05252] border-[#fdf0f0]'}">FALTEI</button>
-                                <button onclick="window.setStatus('${dateKey}', '${id}', 'cancelled', this)" class="py-2.5 rounded-xl text-[9px] font-extrabold border transition ${st==='cancelled'?'bg-slate-400 text-white border-slate-400':'bg-white text-slate-400 border-slate-100'}">CANCELADA</button>
-                            </div>
-                        </div>`;
-                }
-            });
-
-            const dayEvents = eventsData[dateKey] || {};
-            const evIds = Object.keys(dayEvents);
-
-            if (!found) html += `<div class="py-10 text-center opacity-30"><i data-lucide="coffee" class="w-10 h-10 mx-auto mb-2"></i><p class="text-[10px] font-bold uppercase tracking-widest">Sem Aulas</p></div>`;
-
-            if (evIds.length) {
-                html += `<div class="pt-2"><p class="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1">Eventos</p>
-                         <div class="divide-y divide-slate-100">${evIds.map(id => evtChip(dateKey, id, dayEvents[id], true)).join('')}</div></div>`;
-            }
-
-            container.innerHTML = html + `</div>`;
-            document.getElementById('dayForm').classList.remove('hidden');
-            paintEvtType();
-            lucide.createIcons();
-        }
-
-        function getDayClass(st) {
-            const vals = Object.values(st);
-            const hasP = vals.includes('present');
-            const hasA = vals.includes('absent');
-            const hasC = vals.includes('cancelled');
-
-            if (hasP && hasA)          return 'mix-present-absent';
-            if (hasP && hasC && !hasA) return 'mix-present-cancelled';
-            if (hasA && hasC && !hasP) return 'mix-absent-cancelled';
-            if (hasP) return 'is-present';
-            if (hasA) return 'is-absent';
-            if (hasC) return 'is-cancelled';
-            return '';
-        }
-
-        function renderAgenda() {
-            const c = document.getElementById('agenda-container');
-            const tk = keyOfToday();
-            const dates = Object.keys(eventsData).filter(dk => dk >= tk && Object.keys(eventsData[dk]).length).sort();
-
-            if (!dates.length) {
-                c.innerHTML = `<div class="py-16 text-center opacity-30"><i data-lucide="calendar-check" class="w-10 h-10 mx-auto mb-2"></i><p class="text-[10px] font-bold uppercase tracking-widest">Nada por vir</p></div>`;
-                return;
-            }
-
-            const now = new Date();
-            const base = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-            c.innerHTML = dates.map(dk => {
-                const [y, m, d] = dk.split('-').map(Number);
-                const when = new Date(y, m - 1, d);
-                const diff = Math.round((when - base) / 86400000);
-                const label = diff === 0 ? 'Hoje' : diff === 1 ? 'Amanhã' : `Em ${diff} dias`;
-                const urgent = diff <= 2;
-                const items = Object.keys(eventsData[dk]).map(id => evtChip(dk, id, eventsData[dk][id], false)).join('');
-                return `<div onclick="window.showDay('${dk}', ${when.getDay()})" class="bg-white p-5 rounded-3xl border border-white shadow-xl shadow-slate-200/50 cursor-pointer transition hover:shadow-slate-300/50">
-                            <div class="flex justify-between items-center mb-2">
-                                <div>
-                                    <span class="text-xs font-extrabold text-slate-800">${fmtDate(dk)}</span>
-                                    <span class="text-[9px] font-black uppercase text-slate-300 ml-2">${DAY_NAMES[when.getDay()]}</span>
-                                </div>
-                                <span class="text-[9px] font-black uppercase px-2 py-1 rounded-lg ${urgent ? 'text-[#E05252] bg-[#fdf0f0]' : 'text-blue-600 bg-blue-50'}">${label}</span>
-                            </div>
-                            <div class="divide-y divide-slate-100">${items}</div>
-                        </div>`;
-            }).join('');
-        }
-
-        function renderAll() {
-            const sumContainer = document.getElementById('summary-container');
-            sumContainer.innerHTML = '';
-            Object.keys(subjects).forEach(id => {
-                const faults = Object.values(statusData).filter(d => d[id] === 'absent').length;
-                sumContainer.innerHTML += `<div class="bg-white p-5 rounded-3xl border border-white flex justify-between items-center shadow-xl shadow-slate-200/50"><div class="flex-1 mr-4"><p class="text-[9px] font-black text-slate-300 uppercase leading-none mb-1">${id}</p><h4 class="text-xs font-bold text-slate-800 leading-snug">${subjects[id].name}</h4></div><div class="text-2xl font-extrabold shrink-0 ${faults>4?'text-[#E05252]':'text-blue-600'}">${faults}</div></div>`;
-            });
-
-            const cal = document.getElementById('calendarDays');
-            const disp = document.getElementById('monthDisplay');
-            cal.innerHTML = '';
-            const y = currentDate.getFullYear(), m = currentDate.getMonth();
-
-            const raw = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(currentDate);
-            disp.innerText = raw.charAt(0).toUpperCase() + raw.slice(1);
-
-            const first = new Date(y, m, 1).getDay(), days = new Date(y, m+1, 0).getDate();
-            const now = new Date(), todayKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
-
-            for(let i=0; i<first; i++) cal.innerHTML += `<div></div>`;
-            for(let d=1; d<=days; d++){
-                const dk = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-                const dw = new Date(y,m,d).getDay();
-                let has = false; Object.values(subjects).forEach(s => { if(s.days.includes(dw)) has=true; });
-                const st = statusData[dk] || {};
-                const statusClass = Object.keys(st).length > 0 ? getDayClass(st) : '';
-                const baseClass = has ? 'bg-slate-50 text-slate-800 font-bold' : 'no-class';
-                const evs = Object.values(eventsData[dk] || {}).slice(0, 3);
-                const dots = `<div class="evt-dots">${evs.map(e => `<span class="evt-dot evt-${e.type}"></span>`).join('')}</div>`;
-                cal.innerHTML += `<div onclick="window.showDay('${dk}', ${dw})" class="day-card ${statusClass || baseClass} ${dk===todayKey?'today':''}">${d}${dots}</div>`;
-            }
-            renderAgenda();
-            renderDayDetails();
-            lucide.createIcons();
-        }
-    </script>
+        <script type="module" src="./app.js"></script>
 </body>
 </html>
