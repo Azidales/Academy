@@ -21,9 +21,43 @@ export function normaliseRecord(value) {
 }
 
 export function countAbsences(statusData, subjectId) {
-    return Object.values(normaliseRecord(statusData))
-        .filter(day => normaliseRecord(day)[subjectId] === 'absent')
-        .length;
+    return subjectAttendanceStats(statusData, subjectId).absent;
+}
+
+export function subjectAttendanceStats(statusData, subjectId) {
+    const totals = { present: 0, absent: 0, cancelled: 0, recorded: 0, rate: null };
+
+    for (const day of Object.values(normaliseRecord(statusData))) {
+        const status = normaliseRecord(day)[subjectId];
+        if (status === 'present') totals.present += 1;
+        if (status === 'absent') totals.absent += 1;
+        if (status === 'cancelled') totals.cancelled += 1;
+    }
+
+    totals.recorded = totals.present + totals.absent;
+    totals.rate = totals.recorded > 0 ? Math.round((totals.present / totals.recorded) * 100) : null;
+    return totals;
+}
+
+export function aggregateAttendanceStats(statusData) {
+    const totals = { present: 0, absent: 0, cancelled: 0, recorded: 0, rate: null };
+
+    for (const day of Object.values(normaliseRecord(statusData))) {
+        for (const status of Object.values(normaliseRecord(day))) {
+            if (status === 'present') totals.present += 1;
+            if (status === 'absent') totals.absent += 1;
+            if (status === 'cancelled') totals.cancelled += 1;
+        }
+    }
+
+    totals.recorded = totals.present + totals.absent;
+    totals.rate = totals.recorded > 0 ? Math.round((totals.present / totals.recorded) * 100) : null;
+    return totals;
+}
+
+export function countEvents(eventsData) {
+    return Object.values(normaliseRecord(eventsData))
+        .reduce((total, day) => total + Object.keys(normaliseRecord(day)).length, 0);
 }
 
 export function getDayClass(statuses = {}) {
