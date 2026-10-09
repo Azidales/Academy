@@ -3,115 +3,193 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#f6f8fc">
     <title>Academic Flow - Renato</title>
-    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@1.52.0"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
-        <link rel="stylesheet" href="./styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./styles.css">
 </head>
-<body class="bg-slate-50 text-slate-900 pb-24 md:pb-10">
-
-    <div id="loader" role="status" aria-live="polite" class="fixed inset-0 bg-white z-50 flex flex-col items-center justify-center transition-opacity duration-500">
-        <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mb-4"></div>
-        <p class="text-[10px] font-black uppercase tracking-widest text-slate-400">Sincronizando Cloud...</p>
+<body>
+    <div id="loader" class="loader" role="status" aria-live="polite">
+        <div class="loader-spinner" aria-hidden="true"></div>
+        <p>Sincronizando dados...</p>
     </div>
 
-    <div class="max-w-6xl mx-auto px-4 pt-6 md:pt-12">
-        <header class="flex justify-between items-center mb-8 md:mb-12">
-            <div>
-                <h1 class="text-2xl md:text-4xl font-extrabold tracking-tighter italic uppercase text-slate-900 leading-none">Academic<span class="text-blue-600">Flow</span></h1>
-                <p class="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-widest mt-2">Dashboard • Renato</p>
-            </div>
-            <div class="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center text-white shadow-lg">
-                <i data-lucide="user" class="w-5 h-5"></i>
-            </div>
-        </header>
+    <div class="app-shell">
+        <aside class="sidebar" aria-label="Navegação principal">
+            <a class="brand" href="#tab-calendar" aria-label="Academic Flow">
+                <span class="brand-mark"><i data-lucide="layers-3"></i></span>
+                <span>Academic Flow</span>
+            </a>
 
-        <div class="desktop-grid">
-            <div class="space-y-8">
-                <section id="tab-summary" class="tab-content tab-active">
-                    <h2 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                        <i data-lucide="bar-chart-3" class="w-3 h-3"></i> Faltas Acumuladas
-                    </h2>
-                    <div id="summary-container" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
-                </section>
+            <nav class="sidebar-nav">
+                <a class="sidebar-link is-active" href="#tab-calendar">
+                    <i data-lucide="calendar-days"></i><span>Calendário</span>
+                </a>
+                <a class="sidebar-link" href="#tab-agenda">
+                    <i data-lucide="calendar-clock"></i><span>Agenda</span>
+                </a>
+                <a class="sidebar-link" href="#tab-today">
+                    <i data-lucide="check-circle-2"></i><span>Presenças</span>
+                </a>
+                <a class="sidebar-link" href="#tab-summary">
+                    <i data-lucide="bar-chart-3"></i><span>Resumo</span>
+                </a>
+            </nav>
 
-                <section id="tab-calendar" class="tab-content">
-                    <h2 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                        <i data-lucide="calendar" class="w-3 h-3"></i> Calendário
-                    </h2>
-                    <div class="bg-white p-6 rounded-[2rem] shadow-xl shadow-slate-200/50 border border-white">
-                        <div class="flex justify-between items-center mb-8">
-                            <h3 id="monthDisplay" class="font-extrabold text-xl text-slate-800"></h3>
-                            <div class="flex gap-2">
-                                <button type="button" aria-label="Mês anterior" onclick="changeMonth(-1)" class="p-2 hover:bg-slate-50 rounded-xl transition text-slate-400"><i data-lucide="chevron-left"></i></button>
-                                <button type="button" aria-label="Próximo mês" onclick="changeMonth(1)" class="p-2 hover:bg-slate-50 rounded-xl transition text-slate-400"><i data-lucide="chevron-right"></i></button>
-                            </div>
-                        </div>
-                        <div class="calendar-grid text-center text-[10px] font-black text-slate-300 mb-4 uppercase">
-                            <div>Dom</div><div>Seg</div><div>Ter</div><div>Qua</div><div>Qui</div><div>Sex</div><div>Sáb</div>
-                        </div>
-                        <div id="calendarDays" class="calendar-grid gap-2"></div>
-                    </div>
-                </section>
+            <div class="sidebar-bottom">
+                <div class="semester-card">
+                    <span class="eyebrow">Semestre atual</span>
+                    <strong id="semesterLabel">—</strong>
+                </div>
 
-                <section id="tab-agenda" class="tab-content">
-                    <h2 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                        <i data-lucide="calendar-clock" class="w-3 h-3"></i> Próximos Eventos
-                    </h2>
-                    <div id="agenda-container" class="space-y-3"></div>
-                </section>
-            </div>
-
-            <aside id="tab-today" class="tab-content mt-8 md:mt-0">
-                <div class="sticky top-12">
-                    <h2 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                        <i data-lucide="info" class="w-3 h-3"></i> Registro de Presença
-                    </h2>
-                    <div id="dayDetails" class="bg-white/70 backdrop-blur-xl p-6 rounded-[2rem] border border-white shadow-xl min-h-[300px]">
-                        <div id="dayBody">
-                            <div class="flex flex-col items-center justify-center py-20 text-center opacity-30">
-                                <i data-lucide="mouse-pointer-click" class="w-12 h-12 mb-4"></i>
-                                <p class="text-xs font-bold uppercase tracking-widest">Selecione uma data</p>
-                            </div>
-                        </div>
-                        <div id="dayForm" class="hidden mt-5 pt-5 border-t border-slate-100">
-                            <button type="button" id="evtToggle" onclick="window.toggleEvtForm()" class="w-full py-2.5 rounded-xl text-[9px] font-extrabold border border-dashed border-slate-200 text-slate-400 transition hover:border-blue-200 hover:text-blue-600">+ EVENTO</button>
-                            <div id="evtFields" class="hidden space-y-2 mt-2">
-                                <div class="grid grid-cols-2 gap-1">
-                                    <button type="button" id="evtTypeProva" onclick="window.setEvtType('prova')" class="py-2.5 rounded-xl text-[9px] font-extrabold border transition">PROVA</button>
-                                    <button type="button" id="evtTypeTrabalho" onclick="window.setEvtType('trabalho')" class="py-2.5 rounded-xl text-[9px] font-extrabold border transition">TRABALHO</button>
-                                </div>
-                                <div class="relative">
-                                    <select id="evtSubject" class="w-full appearance-none pl-4 pr-9 py-2.5 rounded-xl border border-slate-100 bg-white text-xs font-bold text-slate-700 outline-none focus:border-blue-200 cursor-pointer"></select>
-                                    <span class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 pointer-events-none flex"><i data-lucide="chevron-down" class="w-3.5 h-3.5"></i></span>
-                                </div>
-                                <input id="evtDesc" type="text" maxlength="80" placeholder="Descrição (opcional)" onkeydown="if(event.key==='Enter') window.addEvent()" class="w-full px-4 py-2.5 rounded-xl border border-slate-100 bg-white text-xs font-bold text-slate-700 placeholder:text-slate-300 placeholder:font-normal outline-none focus:border-blue-200">
-                                <button type="button" id="evtAdd" onclick="window.addEvent()" class="w-full py-2.5 rounded-xl bg-blue-600 text-white text-[9px] font-extrabold transition">ADICIONAR</button>
-                            </div>
-                        </div>
+                <div class="sync-card" aria-live="polite">
+                    <span id="syncStatusDot" class="sync-dot syncing"></span>
+                    <div>
+                        <strong id="syncStatusText">Sincronizando</strong>
+                        <small id="syncStatusTime">Conectando ao Firebase</small>
                     </div>
                 </div>
-            </aside>
-        </div>
+
+                <div class="profile-card">
+                    <span class="avatar">R</span>
+                    <div><strong>Renato</strong><small>Academic Flow</small></div>
+                </div>
+            </div>
+        </aside>
+
+        <main class="app-main">
+            <header class="topbar">
+                <div>
+                    <p class="topbar-kicker">Visão acadêmica</p>
+                    <h1 id="greetingTitle">Olá, Renato</h1>
+                    <p class="topbar-subtitle">Acompanhe aulas, presença e compromissos em um só lugar.</p>
+                </div>
+                <div class="topbar-date">
+                    <i data-lucide="calendar-check-2"></i>
+                    <span id="contextDate">—</span>
+                </div>
+            </header>
+
+            <div class="mobile-brand-row">
+                <div class="brand compact"><span class="brand-mark"><i data-lucide="layers-3"></i></span><span>Academic Flow</span></div>
+                <span id="mobileSemester" class="semester-pill">—</span>
+            </div>
+
+            <div class="dashboard-layout">
+                <div class="main-column">
+                    <section id="tab-calendar" class="tab-content tab-active dashboard-section">
+                        <div class="section-heading">
+                            <div>
+                                <span class="eyebrow">Planejamento</span>
+                                <h2>Calendário</h2>
+                            </div>
+                            <button type="button" class="secondary-button" onclick="window.goToday()">
+                                <i data-lucide="locate-fixed"></i><span>Hoje</span>
+                            </button>
+                        </div>
+
+                        <div class="panel calendar-panel">
+                            <div class="calendar-toolbar">
+                                <div class="month-control">
+                                    <button type="button" aria-label="Mês anterior" onclick="window.changeMonth(-1)" class="icon-button"><i data-lucide="chevron-left"></i></button>
+                                    <h3 id="monthDisplay">—</h3>
+                                    <button type="button" aria-label="Próximo mês" onclick="window.changeMonth(1)" class="icon-button"><i data-lucide="chevron-right"></i></button>
+                                </div>
+                                <div class="calendar-legend" aria-label="Legenda do calendário">
+                                    <span><i class="legend-dot present"></i>Presente</span>
+                                    <span><i class="legend-dot absent"></i>Falta</span>
+                                    <span><i class="legend-dot event"></i>Evento</span>
+                                </div>
+                            </div>
+                            <div class="calendar-weekdays" aria-hidden="true">
+                                <span>Dom</span><span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span>
+                            </div>
+                            <div id="calendarDays" class="calendar-grid"></div>
+                        </div>
+                    </section>
+
+                    <section id="tab-summary" class="tab-content dashboard-section">
+                        <div class="section-heading">
+                            <div>
+                                <span class="eyebrow">Desempenho registrado</span>
+                                <h2>Suas matérias</h2>
+                            </div>
+                            <span class="muted-note">Cancelamentos não entram na frequência</span>
+                        </div>
+                        <div id="summary-container" class="subjects-list"></div>
+                    </section>
+                </div>
+
+                <aside class="right-column">
+                    <section id="tab-today" class="tab-content dashboard-section">
+                        <div class="section-heading compact-heading">
+                            <div>
+                                <span class="eyebrow">Registro rápido</span>
+                                <h2 id="todaySectionTitle">Hoje</h2>
+                            </div>
+                            <span id="selectedDateBadge" class="date-badge">—</span>
+                        </div>
+
+                        <div id="dayDetails" class="panel day-panel">
+                            <div id="dayBody">
+                                <div class="empty-state">
+                                    <i data-lucide="mouse-pointer-click"></i>
+                                    <strong>Selecione uma data</strong>
+                                    <span>Escolha um dia no calendário para registrar presença.</span>
+                                </div>
+                            </div>
+
+                            <div id="dayForm" class="event-form-wrap hidden">
+                                <button type="button" id="evtToggle" onclick="window.toggleEvtForm()" class="outline-button full-width">
+                                    <i data-lucide="plus"></i><span>Adicionar evento</span>
+                                </button>
+                                <div id="evtFields" class="event-fields hidden">
+                                    <div class="event-type-grid">
+                                        <button type="button" id="evtTypeProva" onclick="window.setEvtType('prova')" class="event-type-btn prova">Prova</button>
+                                        <button type="button" id="evtTypeTrabalho" onclick="window.setEvtType('trabalho')" class="event-type-btn trabalho">Trabalho</button>
+                                    </div>
+                                    <label class="field-label" for="evtSubject">Matéria</label>
+                                    <select id="evtSubject" class="input-control"></select>
+                                    <label class="field-label" for="evtDesc">Descrição</label>
+                                    <input id="evtDesc" class="input-control" type="text" maxlength="80" placeholder="Descrição (opcional)" onkeydown="if(event.key==='Enter') window.addEvent()">
+                                    <button type="button" id="evtAdd" onclick="window.addEvent()" class="primary-button full-width">Adicionar</button>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section id="tab-agenda" class="tab-content dashboard-section">
+                        <div class="section-heading compact-heading">
+                            <div>
+                                <span class="eyebrow">Próximos passos</span>
+                                <h2>Agenda</h2>
+                            </div>
+                        </div>
+                        <div id="agenda-container" class="agenda-list"></div>
+                    </section>
+
+                    <section class="dashboard-section desktop-context-only">
+                        <div class="section-heading compact-heading">
+                            <div>
+                                <span class="eyebrow">Visão geral</span>
+                                <h2>Semestre</h2>
+                            </div>
+                        </div>
+                        <div id="semesterStats" class="semester-stats panel"></div>
+                    </section>
+                </aside>
+            </div>
+        </main>
     </div>
 
-    <!-- Menu claro com borda sutil -->
-    <nav class="mobile-nav fixed bottom-6 left-6 right-6 bg-white/90 backdrop-blur-md rounded-full px-8 py-4 flex justify-between items-center z-40 shadow-xl shadow-slate-200/80 border border-slate-100">
-        <button type="button" aria-label="Resumo" onclick="switchTab('summary', this)" class="flex flex-col items-center gap-1 text-slate-300 nav-active">
-            <i data-lucide="layout-grid" class="w-5 h-5"></i>
-        </button>
-        <button type="button" aria-label="Calendário" onclick="switchTab('calendar', this)" class="flex flex-col items-center gap-1 text-slate-300">
-            <i data-lucide="calendar" class="w-5 h-5"></i>
-        </button>
-        <button type="button" aria-label="Agenda" onclick="switchTab('agenda', this)" class="flex flex-col items-center gap-1 text-slate-300">
-            <i data-lucide="calendar-clock" class="w-5 h-5"></i>
-        </button>
-        <button type="button" aria-label="Registro de presença" id="todayBtn" onclick="switchTab('today', this)" class="flex flex-col items-center gap-1 text-slate-300">
-            <i data-lucide="check-square" class="w-5 h-5"></i>
-        </button>
+    <nav class="mobile-nav" aria-label="Navegação móvel">
+        <button type="button" class="nav-active" aria-label="Calendário" onclick="window.switchTab('calendar', this)"><i data-lucide="calendar-days"></i><span>Calendário</span></button>
+        <button type="button" aria-label="Resumo" onclick="window.switchTab('summary', this)"><i data-lucide="bar-chart-3"></i><span>Resumo</span></button>
+        <button type="button" aria-label="Agenda" onclick="window.switchTab('agenda', this)"><i data-lucide="calendar-clock"></i><span>Agenda</span></button>
+        <button type="button" id="todayBtn" aria-label="Hoje" onclick="window.switchTab('today', this)"><i data-lucide="check-circle-2"></i><span>Hoje</span></button>
     </nav>
 
-        <script type="module" src="./app.js"></script>
+    <script type="module" src="./app.js"></script>
 </body>
 </html>
