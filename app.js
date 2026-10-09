@@ -1,314 +1,488 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, doc, setDoc, updateDoc, deleteField, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-        import { countAbsences, escapeHtml as esc, formatDateKey as fmtDate, getDayClass, normaliseRecord, todayKey as keyOfToday, upcomingEventDates } from "./app-logic.js";
+import { getFirestore, doc, setDoc, updateDoc, deleteField, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import {
+    aggregateAttendanceStats,
+    countEvents,
+    escapeHtml as esc,
+    formatDateKey as fmtDate,
+    getDayClass,
+    normaliseRecord,
+    subjectAttendanceStats,
+    todayKey as keyOfToday,
+    upcomingEventDates
+} from "./app-logic.js";
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyC9W4W6bDdH6p2GLi_TwG2XDd0yPNH8SEQ",
-            authDomain: "academic-flow-3a2ef.firebaseapp.com",
-            projectId: "academic-flow-3a2ef",
-            storageBucket: "academic-flow-3a2ef.firebasestorage.app",
-            messagingSenderId: "469639047695",
-            appId: "1:469639047695:web:358d524690e08be504917a"
-        };
+const firebaseConfig = {
+    apiKey: "AIzaSyC9W4W6bDdH6p2GLi_TwG2XDd0yPNH8SEQ",
+    authDomain: "academic-flow-3a2ef.firebaseapp.com",
+    projectId: "academic-flow-3a2ef",
+    storageBucket: "academic-flow-3a2ef.firebasestorage.app",
+    messagingSenderId: "469639047695",
+    appId: "1:469639047695:web:358d524690e08be504917a"
+};
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
-        const subjects = {
-            "SE621A": { name: "Economia Industrial", days: [1, 4], start: {1: "19:00", 4: "21:00"} },
-            "SE620": { name: "Economia do Setor Público", days: [1, 3], start: {1: "21:00", 3: "19:00"} },
-            "SE623": { name: "Economia Internacional II", days: [2, 5], start: {2: "19:00", 5: "21:00"} },
-            "SE622": { name: "Elaboração e Análise de Projetos II", days: [2, 4], start: {2: "21:00", 4: "19:00"} }
-        };
+const subjects = {
+    "SE621A": { name: "Economia Industrial", days: [1, 4], start: { 1: "19:00", 4: "21:00" } },
+    "SE620": { name: "Economia do Setor Público", days: [1, 3], start: { 1: "21:00", 3: "19:00" } },
+    "SE623": { name: "Economia Internacional II", days: [2, 5], start: { 2: "19:00", 5: "21:00" } },
+    "SE622": { name: "Elaboração e Análise de Projetos II", days: [2, 4], start: { 2: "21:00", 4: "19:00" } }
+};
 
-        const DAY_NAMES = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
-        const EVT_TYPES = { prova: "Prova", trabalho: "Trabalho" };
+const SUBJECT_COLORS = ["#21b876", "#ef5362", "#f2b71f", "#1769ff"];
+const DAY_NAMES = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
+const EVT_TYPES = { prova: "Prova", trabalho: "Trabalho" };
 
-        let statusData = {};
-        let eventsData = {};
-        let currentDate = new Date();
-        let selectedDay = null;
-        let evtType = 'prova';
+let attendanceData = {};
+let eventsData = {};
+let currentDate = new Date();
+let selectedDay = dayDescriptor(new Date());
+let evtType = "prova";
 
+function dayDescriptor(date) {
+    return { dateKey: keyOfToday(date), dayOfWeek: date.getDay() };
+}
 
-        document.getElementById('evtSubject').innerHTML =
-            `<option value="">Sem matéria</option>` +
-            Object.keys(subjects).map(id => `<option value="${id}">${id} — ${subjects[id].name}</option>`).join('');
+function refreshIcons() {
+    if (window.lucide?.createIcons) window.lucide.createIcons();
+}
 
-        onSnapshot(
-            doc(db, "users", "renato"),
-            (snap) => {
-                const data = snap.exists() ? snap.data() : {};
-                statusData = normaliseRecord(data.absences);
-                eventsData = normaliseRecord(data.events);
-                renderAll();
-                setLoaderReady();
-            },
-            (error) => {
-                console.error('Falha ao sincronizar com o Firestore:', error);
-                statusData = {};
-                eventsData = {};
-                renderAll();
-                setLoaderError();
-            }
-        );
+function getSemesterLabel(date = new Date()) {
+    return `${date.getFullYear()}/${date.getMonth() < 6 ? 1 : 2}`;
+}
 
-        window.switchTab = (tabId, btn) => {
-            if (window.innerWidth < 768) {
-                document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('tab-active'));
-                document.getElementById('tab-' + tabId).classList.add('tab-active');
-                document.querySelectorAll('nav button').forEach(b => b.classList.remove('nav-active'));
-                btn.classList.add('nav-active');
-                lucide.createIcons();
-            }
-        };
+function getGreeting(date = new Date()) {
+    const hour = date.getHours();
+    if (hour < 12) return "Bom dia";
+    if (hour < 18) return "Boa tarde";
+    return "Boa noite";
+}
 
-        window.setStatus = async (date, subId, status, btn) => {
-            btn.innerHTML = `<span class="animate-pulse">...</span>`;
+function setStaticContext() {
+    const now = new Date();
+    const semester = getSemesterLabel(now);
+    document.getElementById("greetingTitle").textContent = `${getGreeting(now)}, Renato`;
+    document.getElementById("contextDate").textContent = new Intl.DateTimeFormat("pt-BR", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric"
+    }).format(now);
+    document.getElementById("semesterLabel").textContent = semester;
+    document.getElementById("mobileSemester").textContent = semester;
+}
 
-            const isToggleOff = statusData[date]?.[subId] === status;
-            const docRef = doc(db, "users", "renato");
+function setSyncState(state) {
+    const dot = document.getElementById("syncStatusDot");
+    const text = document.getElementById("syncStatusText");
+    const time = document.getElementById("syncStatusTime");
+    dot.className = `sync-dot ${state}`;
 
-            try {
-                if (isToggleOff) {
-                    await updateDoc(docRef, {
-                        [`absences.${date}.${subId}`]: deleteField()
-                    });
-                } else {
-                    await setDoc(docRef, {
-                        absences: { [date]: { [subId]: status } }
-                    }, { merge: true });
-                }
-            } catch (e) {
-                renderDayDetails();
-                showSyncError();
-            }
-        };
+    if (state === "ready") {
+        text.textContent = "Sincronizado";
+        time.textContent = `Atualizado às ${new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit" }).format(new Date())}`;
+    } else if (state === "error") {
+        text.textContent = "Sem sincronização";
+        time.textContent = "Verifique sua conexão";
+    } else {
+        text.textContent = "Sincronizando";
+        time.textContent = "Conectando ao Firebase";
+    }
+}
 
-        window.toggleEvtForm = () => {
-            const f = document.getElementById('evtFields');
-            f.classList.toggle('hidden');
-            document.getElementById('evtToggle').innerText = f.classList.contains('hidden') ? '+ EVENTO' : 'CANCELAR';
-            if (!f.classList.contains('hidden')) {
-                document.getElementById('evtDesc').focus();
-                if (window.innerWidth < 768) f.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-        };
+function setLoaderReady() {
+    const loader = document.getElementById("loader");
+    loader.style.opacity = "0";
+    setTimeout(() => { loader.style.display = "none"; }, 350);
+}
 
-        window.setEvtType = (t) => {
-            evtType = t;
-            paintEvtType();
-        };
+function setLoaderError() {
+    const loader = document.getElementById("loader");
+    loader.innerHTML = `
+        <div class="empty-state">
+            <i data-lucide="cloud-off"></i>
+            <strong>Falha ao sincronizar</strong>
+            <span>Verifique sua conexão e recarregue a página.</span>
+        </div>`;
+    refreshIcons();
+}
 
-        function paintEvtType() {
-            const on = { prova: 'bg-[#E05252] text-white border-[#E05252]', trabalho: 'bg-[#f59e0b] text-white border-[#f59e0b]' };
-            const off = { prova: 'bg-white text-[#E05252] border-[#fdf0f0]', trabalho: 'bg-white text-[#f59e0b] border-[#fef3c7]' };
-            for (const t of ['prova', 'trabalho']) {
-                const el = document.getElementById('evtType' + t.charAt(0).toUpperCase() + t.slice(1));
-                el.className = `py-2.5 rounded-xl text-[9px] font-extrabold border transition ${evtType === t ? on[t] : off[t]}`;
-            }
+setStaticContext();
+setSyncState("syncing");
+document.querySelectorAll(".sidebar-link").forEach(link => {
+    link.addEventListener("click", () => {
+        document.querySelectorAll(".sidebar-link").forEach(item => item.classList.remove("is-active"));
+        link.classList.add("is-active");
+    });
+});
+
+document.getElementById("evtSubject").innerHTML =
+    `<option value="">Sem matéria</option>` +
+    Object.keys(subjects).map(id => `<option value="${id}">${id} — ${subjects[id].name}</option>`).join("");
+
+onSnapshot(
+    doc(db, "users", "renato"),
+    (snap) => {
+        const data = snap.exists() ? snap.data() : {};
+        attendanceData = normaliseRecord(data.absences);
+        eventsData = normaliseRecord(data.events);
+        renderAll();
+        setSyncState("ready");
+        setLoaderReady();
+    },
+    (error) => {
+        console.error("Falha ao sincronizar com o Firestore:", error);
+        attendanceData = {};
+        eventsData = {};
+        renderAll();
+        setSyncState("error");
+        setLoaderError();
+    }
+);
+
+window.switchTab = (tabId, btn) => {
+    if (window.innerWidth >= 768) return;
+    document.querySelectorAll(".tab-content").forEach(tab => tab.classList.remove("tab-active"));
+    document.getElementById(`tab-${tabId}`)?.classList.add("tab-active");
+    document.querySelectorAll(".mobile-nav button").forEach(button => button.classList.remove("nav-active"));
+    btn?.classList.add("nav-active");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    refreshIcons();
+};
+
+window.changeMonth = (step) => {
+    currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + step, 1);
+    renderCalendar();
+};
+
+window.goToday = () => {
+    const now = new Date();
+    currentDate = new Date(now.getFullYear(), now.getMonth(), 1);
+    selectedDay = dayDescriptor(now);
+    renderCalendar();
+    renderDayDetails();
+};
+
+window.showDay = (dateKey, dayOfWeek) => {
+    selectedDay = { dateKey, dayOfWeek };
+    renderDayDetails();
+    if (window.innerWidth < 768) {
+        window.switchTab("today", document.getElementById("todayBtn"));
+    }
+};
+
+window.setStatus = async (date, subId, status, btn) => {
+    const previousContent = btn.innerHTML;
+    btn.innerHTML = "...";
+    btn.disabled = true;
+
+    const isToggleOff = attendanceData[date]?.[subId] === status;
+    const docRef = doc(db, "users", "renato");
+
+    try {
+        if (isToggleOff) {
+            await updateDoc(docRef, { [`absences.${date}.${subId}`]: deleteField() });
+        } else {
+            await setDoc(docRef, { absences: { [date]: { [subId]: status } } }, { merge: true });
         }
+    } catch (error) {
+        console.error("Falha ao registrar presença:", error);
+        btn.innerHTML = previousContent;
+        btn.disabled = false;
+        showSyncError();
+    }
+};
 
-        window.addEvent = async () => {
-            if (!selectedDay) return;
-            const input = document.getElementById('evtDesc');
-            const btn = document.getElementById('evtAdd');
-            const desc = input.value.trim();
-            const subject = document.getElementById('evtSubject').value;
-            const id = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now())).slice(0, 8);
+window.toggleEvtForm = () => {
+    const fields = document.getElementById("evtFields");
+    const opening = fields.classList.contains("hidden");
+    fields.classList.toggle("hidden");
+    setEventToggleLabel(opening);
 
-            btn.innerHTML = `<span class="animate-pulse">...</span>`;
-            try {
-                await setDoc(doc(db, "users", "renato"), {
-                    events: { [selectedDay.dateKey]: { [id]: { type: evtType, desc, subject } } }
-                }, { merge: true });
-                input.value = '';
-                window.toggleEvtForm();
-            } catch (e) {
-                showSyncError();
-            }
-            btn.innerHTML = 'ADICIONAR';
-        };
+    if (opening) {
+        document.getElementById("evtDesc").focus();
+        if (window.innerWidth < 768) fields.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+};
 
-        window.delEvent = async (dateKey, id) => {
-            try {
-                await updateDoc(doc(db, "users", "renato"), {
-                    [`events.${dateKey}.${id}`]: deleteField()
-                });
-            } catch (e) {
-                showSyncError();
-            }
-        };
+function setEventToggleLabel(open) {
+    const toggle = document.getElementById("evtToggle");
+    toggle.innerHTML = open
+        ? `<i data-lucide="x"></i><span>Cancelar</span>`
+        : `<i data-lucide="plus"></i><span>Adicionar evento</span>`;
+    refreshIcons();
+}
 
-        window.changeMonth = (s) => { currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + s, 1); renderAll(); };
+window.setEvtType = (type) => {
+    evtType = type;
+    paintEvtType();
+};
 
-        window.showDay = (dateKey, dayOfWeek) => {
-            selectedDay = { dateKey, dayOfWeek };
-            renderDayDetails();
-            if (window.innerWidth < 768) window.switchTab('today', document.getElementById('todayBtn'));
-        };
+function paintEvtType() {
+    for (const type of ["prova", "trabalho"]) {
+        const button = document.getElementById(`evtType${type.charAt(0).toUpperCase()}${type.slice(1)}`);
+        button.className = `event-type-btn ${type}${evtType === type ? " active" : ""}`;
+    }
+}
 
-        function setLoaderReady() {
-            const loader = document.getElementById('loader');
-            loader.style.opacity = '0';
-            setTimeout(() => { loader.style.display = 'none'; }, 500);
-        }
+window.addEvent = async () => {
+    if (!selectedDay) return;
 
-        function setLoaderError() {
-            const loader = document.getElementById('loader');
-            loader.classList.remove('transition-opacity', 'duration-500');
-            loader.innerHTML = `
-                <div class="max-w-xs text-center px-6">
-                    <i data-lucide="cloud-off" class="w-10 h-10 mx-auto mb-4 text-slate-400"></i>
-                    <p class="text-xs font-black uppercase tracking-widest text-slate-700 mb-2">Falha ao sincronizar</p>
-                    <p class="text-xs text-slate-400">Verifique sua conexão e recarregue a página.</p>
-                </div>`;
-            lucide.createIcons();
-        }
+    const input = document.getElementById("evtDesc");
+    const addButton = document.getElementById("evtAdd");
+    const description = input.value.trim();
+    const subject = document.getElementById("evtSubject").value;
+    const id = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now())).slice(0, 8);
 
-        function showSyncError() {
-            clearSyncError();
-            document.getElementById('dayDetails').insertAdjacentHTML('afterbegin',
-                `<div id="syncError" class="mb-4 p-3 rounded-2xl bg-[#fdf0f0] border border-[#f0b8b8] text-[10px] font-black uppercase tracking-widest text-[#E05252] text-center">Falha ao sincronizar</div>`);
-        }
+    addButton.textContent = "Adicionando...";
+    addButton.disabled = true;
 
-        function clearSyncError() {
-            document.getElementById('syncError')?.remove();
-        }
+    try {
+        await setDoc(doc(db, "users", "renato"), {
+            events: { [selectedDay.dateKey]: { [id]: { type: evtType, desc: description, subject } } }
+        }, { merge: true });
+        input.value = "";
+        document.getElementById("evtSubject").value = "";
+        if (!document.getElementById("evtFields").classList.contains("hidden")) window.toggleEvtForm();
+    } catch (error) {
+        console.error("Falha ao adicionar evento:", error);
+        showSyncError();
+    } finally {
+        addButton.textContent = "Adicionar";
+        addButton.disabled = false;
+    }
+};
 
-        function evtChip(dateKey, id, ev, removable) {
-            const knownType = ev.type === 'prova' || ev.type === 'trabalho';
-            const color = ev.type === 'prova' ? '#E05252' : ev.type === 'trabalho' ? '#f59e0b' : '#64748b';
-            const bg = ev.type === 'prova' ? '#fdf0f0' : ev.type === 'trabalho' ? '#fffbeb' : '#f1f5f9';
-            const label = knownType ? EVT_TYPES[ev.type] : 'Evento';
-            const del = removable
-                ? `<button type="button" aria-label="Excluir evento" onclick="window.delEvent('${dateKey}', '${id}')" class="text-slate-300 hover:text-[#E05252] transition shrink-0 p-2"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>`
-                : '';
-            return `<div class="flex items-center justify-between gap-2 py-2">
-                        <div class="flex items-center gap-2 min-w-0">
-                            <span class="text-[9px] font-black uppercase px-2 py-1 rounded-lg shrink-0" style="color:${color};background:${bg}">${label}</span>
-                            ${ev.subject && subjects[ev.subject] ? `<span class="text-[9px] font-black uppercase text-slate-300 shrink-0">${ev.subject}</span>` : ''}
-                            ${ev.desc ? `<span class="text-xs font-bold text-slate-700 truncate">${esc(ev.desc)}</span>` : ''}
-                        </div>${del}
-                    </div>`;
-        }
+window.delEvent = async (dateKey, id) => {
+    try {
+        await updateDoc(doc(db, "users", "renato"), { [`events.${dateKey}.${id}`]: deleteField() });
+    } catch (error) {
+        console.error("Falha ao excluir evento:", error);
+        showSyncError();
+    }
+};
 
-        function renderDayDetails() {
-            if (!selectedDay) return;
-            clearSyncError();
-            const { dateKey, dayOfWeek } = selectedDay;
-            const container = document.getElementById('dayBody');
-            const dateFmt = fmtDate(dateKey);
-            const dayName = DAY_NAMES[dayOfWeek];
+function showSyncError() {
+    clearSyncError();
+    document.getElementById("dayDetails").insertAdjacentHTML(
+        "afterbegin",
+        `<div id="syncError" class="sync-error">Falha ao sincronizar. Tente novamente.</div>`
+    );
+}
 
-            let html = `<div class="mb-6"><h3 class="text-xl font-extrabold">${dateFmt}</h3><p class="text-[10px] font-black uppercase text-blue-600">${dayName}</p></div><div class="space-y-4">`;
-            let found = false;
+function clearSyncError() {
+    document.getElementById("syncError")?.remove();
+}
 
-            Object.keys(subjects).forEach(id => {
-                if (subjects[id].days.includes(dayOfWeek)) {
-                    found = true;
-                    const st = statusData[dateKey]?.[id];
-                    html += `
-                        <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm">
-                            <div class="flex justify-between items-center mb-4 text-[10px] font-black">
-                                <span class="text-slate-300 uppercase">${id}</span>
-                                <span class="text-blue-600 bg-blue-50 px-2 py-0.5 rounded-lg">${subjects[id].start[dayOfWeek]}h</span>
-                            </div>
-                            <h4 class="text-xs font-bold text-slate-700 mb-5 leading-snug">${subjects[id].name}</h4>
-                            <div class="grid grid-cols-3 gap-1">
-                                <button onclick="window.setStatus('${dateKey}', '${id}', 'present', this)" class="py-2.5 rounded-xl text-[9px] font-extrabold border transition ${st==='present'?'bg-blue-600 text-white border-blue-600':'bg-white text-blue-600 border-blue-50'}">PRESENTE</button>
-                                <button onclick="window.setStatus('${dateKey}', '${id}', 'absent', this)" class="py-2.5 rounded-xl text-[9px] font-extrabold border transition ${st==='absent'?'bg-[#E05252] text-white border-[#E05252]':'bg-white text-[#E05252] border-[#fdf0f0]'}">FALTEI</button>
-                                <button onclick="window.setStatus('${dateKey}', '${id}', 'cancelled', this)" class="py-2.5 rounded-xl text-[9px] font-extrabold border transition ${st==='cancelled'?'bg-slate-400 text-white border-slate-400':'bg-white text-slate-400 border-slate-100'}">CANCELADA</button>
-                            </div>
-                        </div>`;
-                }
-            });
+function eventTypeClass(type) {
+    if (type === "prova") return "prova";
+    if (type === "trabalho") return "trabalho";
+    return "generic";
+}
 
-            const dayEvents = eventsData[dateKey] || {};
-            const evIds = Object.keys(dayEvents);
+function evtChip(dateKey, id, event, removable) {
+    event = normaliseRecord(event);
+    const typeClass = eventTypeClass(event.type);
+    const label = EVT_TYPES[event.type] || "Evento";
+    const deleteButton = removable
+        ? `<button type="button" aria-label="Excluir evento" onclick="window.delEvent('${dateKey}', '${id}')" class="delete-event"><i data-lucide="x"></i></button>`
+        : "";
 
-            if (!found) html += `<div class="py-10 text-center opacity-30"><i data-lucide="coffee" class="w-10 h-10 mx-auto mb-2"></i><p class="text-[10px] font-bold uppercase tracking-widest">Sem Aulas</p></div>`;
+    return `<div class="event-row">
+        <div class="event-row-main">
+            <span class="event-pill ${typeClass}">${label}</span>
+            ${event.subject && subjects[event.subject] ? `<span class="event-subject">${event.subject}</span>` : ""}
+            ${event.desc ? `<span class="event-desc">${esc(event.desc)}</span>` : ""}
+        </div>
+        ${deleteButton}
+    </div>`;
+}
 
-            if (evIds.length) {
-                html += `<div class="pt-2"><p class="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1">Eventos</p>
-                         <div class="divide-y divide-slate-100">${evIds.map(id => evtChip(dateKey, id, dayEvents[id], true)).join('')}</div></div>`;
-            }
+function renderDayDetails() {
+    if (!selectedDay) return;
+    clearSyncError();
 
-            container.innerHTML = html + `</div>`;
-            document.getElementById('dayForm').classList.remove('hidden');
-            paintEvtType();
-            lucide.createIcons();
-        }
+    const { dateKey, dayOfWeek } = selectedDay;
+    const container = document.getElementById("dayBody");
+    const selectedIsToday = dateKey === keyOfToday();
+    document.getElementById("todaySectionTitle").textContent = selectedIsToday ? "Hoje" : "Dia selecionado";
+    document.getElementById("selectedDateBadge").textContent = fmtDate(dateKey);
 
-        function renderAgenda() {
-            const c = document.getElementById('agenda-container');
-            const tk = keyOfToday();
-            const dates = upcomingEventDates(eventsData, tk);
+    const sessions = Object.entries(subjects).filter(([, subject]) => subject.days.includes(dayOfWeek));
+    let html = `<div class="day-detail-header">
+        <strong>${DAY_NAMES[dayOfWeek]}</strong>
+        <span>${fmtDate(dateKey)}${selectedIsToday ? " • hoje" : ""}</span>
+    </div>`;
 
-            if (!dates.length) {
-                c.innerHTML = `<div class="py-16 text-center opacity-30"><i data-lucide="calendar-check" class="w-10 h-10 mx-auto mb-2"></i><p class="text-[10px] font-bold uppercase tracking-widest">Nada por vir</p></div>`;
-                return;
-            }
+    if (sessions.length) {
+        html += `<div class="day-sessions">`;
+        sessions.forEach(([id, subject]) => {
+            const status = attendanceData[dateKey]?.[id];
+            const tone = Object.keys(subjects).indexOf(id);
+            html += `<div class="session-card" style="border-left-color:${SUBJECT_COLORS[tone]}">
+                <div class="session-top">
+                    <span class="session-code">${id}</span>
+                    <span class="session-time">${subject.start[dayOfWeek]}h</span>
+                </div>
+                <div class="session-name">${subject.name}</div>
+                <div class="attendance-actions">
+                    <button type="button" onclick="window.setStatus('${dateKey}', '${id}', 'present', this)" class="attendance-btn present${status === "present" ? " active" : ""}">Presente</button>
+                    <button type="button" onclick="window.setStatus('${dateKey}', '${id}', 'absent', this)" class="attendance-btn absent${status === "absent" ? " active" : ""}">Faltei</button>
+                    <button type="button" onclick="window.setStatus('${dateKey}', '${id}', 'cancelled', this)" class="attendance-btn cancelled${status === "cancelled" ? " active" : ""}">Cancelada</button>
+                </div>
+            </div>`;
+        });
+        html += `</div>`;
+    } else {
+        html += `<div class="no-class-state">Sem aulas programadas para este dia.</div>`;
+    }
 
-            const now = new Date();
-            const base = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const dayEvents = normaliseRecord(eventsData[dateKey]);
+    const eventIds = Object.keys(dayEvents);
+    if (eventIds.length) {
+        html += `<div class="day-events"><p class="day-events-title">Eventos do dia</p>${eventIds.map(id => evtChip(dateKey, id, dayEvents[id], true)).join("")}</div>`;
+    }
 
-            c.innerHTML = dates.map(dk => {
-                const [y, m, d] = dk.split('-').map(Number);
-                const when = new Date(y, m - 1, d);
-                const diff = Math.round((when - base) / 86400000);
-                const label = diff === 0 ? 'Hoje' : diff === 1 ? 'Amanhã' : `Em ${diff} dias`;
-                const urgent = diff <= 2;
-                const items = Object.keys(eventsData[dk]).map(id => evtChip(dk, id, eventsData[dk][id], false)).join('');
-                return `<div onclick="window.showDay('${dk}', ${when.getDay()})" class="bg-white p-5 rounded-3xl border border-white shadow-xl shadow-slate-200/50 cursor-pointer transition hover:shadow-slate-300/50">
-                            <div class="flex justify-between items-center mb-2">
-                                <div>
-                                    <span class="text-xs font-extrabold text-slate-800">${fmtDate(dk)}</span>
-                                    <span class="text-[9px] font-black uppercase text-slate-300 ml-2">${DAY_NAMES[when.getDay()]}</span>
-                                </div>
-                                <span class="text-[9px] font-black uppercase px-2 py-1 rounded-lg ${urgent ? 'text-[#E05252] bg-[#fdf0f0]' : 'text-blue-600 bg-blue-50'}">${label}</span>
-                            </div>
-                            <div class="divide-y divide-slate-100">${items}</div>
-                        </div>`;
-            }).join('');
-        }
+    container.innerHTML = html;
+    document.getElementById("dayForm").classList.remove("hidden");
+    paintEvtType();
+    refreshIcons();
+}
 
-        function renderAll() {
-            const sumContainer = document.getElementById('summary-container');
-            sumContainer.innerHTML = '';
-            Object.keys(subjects).forEach(id => {
-                const faults = countAbsences(statusData, id);
-                sumContainer.innerHTML += `<div class="bg-white p-5 rounded-3xl border border-white flex justify-between items-center shadow-xl shadow-slate-200/50"><div class="flex-1 mr-4"><p class="text-[9px] font-black text-slate-300 uppercase leading-none mb-1">${id}</p><h4 class="text-xs font-bold text-slate-800 leading-snug">${subjects[id].name}</h4></div><div class="text-2xl font-extrabold shrink-0 ${faults>4?'text-[#E05252]':'text-blue-600'}">${faults}</div></div>`;
-            });
+function renderAgenda() {
+    const container = document.getElementById("agenda-container");
+    const today = keyOfToday();
+    const dates = upcomingEventDates(eventsData, today);
 
-            const cal = document.getElementById('calendarDays');
-            const disp = document.getElementById('monthDisplay');
-            cal.innerHTML = '';
-            const y = currentDate.getFullYear(), m = currentDate.getMonth();
+    if (!dates.length) {
+        container.innerHTML = `<div class="agenda-empty">
+            <i data-lucide="calendar-check-2"></i>
+            <strong>Nenhuma avaliação agendada</strong>
+            <span>Provas e trabalhos futuros aparecerão aqui.</span>
+        </div>`;
+        return;
+    }
 
-            const raw = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(currentDate);
-            disp.innerText = raw.charAt(0).toUpperCase() + raw.slice(1);
+    const now = new Date();
+    const base = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-            const first = new Date(y, m, 1).getDay(), days = new Date(y, m+1, 0).getDate();
-            const now = new Date(), todayKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+    container.innerHTML = dates.map(dateKey => {
+        const [year, month, day] = dateKey.split("-").map(Number);
+        const when = new Date(year, month - 1, day);
+        const diff = Math.round((when - base) / 86400000);
+        const relative = diff === 0 ? "Hoje" : diff === 1 ? "Amanhã" : `Em ${diff} dias`;
+        const urgentClass = diff <= 2 ? " urgent" : "";
+        const items = Object.keys(normaliseRecord(eventsData[dateKey]))
+            .map(id => evtChip(dateKey, id, eventsData[dateKey][id], false))
+            .join("");
 
-            for(let i=0; i<first; i++) cal.innerHTML += `<div></div>`;
-            for(let d=1; d<=days; d++){
-                const dk = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-                const dw = new Date(y,m,d).getDay();
-                let has = false; Object.values(subjects).forEach(s => { if(s.days.includes(dw)) has=true; });
-                const st = statusData[dk] || {};
-                const statusClass = Object.keys(st).length > 0 ? getDayClass(st) : '';
-                const baseClass = has ? 'bg-slate-50 text-slate-800 font-bold' : 'no-class';
-                const evs = Object.values(normaliseRecord(eventsData[dk])).slice(0, 3);
-                const dots = `<div class="evt-dots" aria-hidden="true">${evs.map(e => {
-                    const dotClass = e.type === 'prova' ? 'evt-prova' : e.type === 'trabalho' ? 'evt-trabalho' : 'evt-generic';
-                    return `<span class="evt-dot ${dotClass}"></span>`;
-                }).join('')}</div>`;
-                const dayLabel = `${d} de ${raw}`;
-                cal.innerHTML += `<button type="button" aria-label="${dayLabel}" onclick="window.showDay('${dk}', ${dw})" class="day-card ${statusClass || baseClass} ${dk===todayKey?'today':''}">${d}${dots}</button>`;
-            }
-            renderAgenda();
-            renderDayDetails();
-            lucide.createIcons();
-        }
+        return `<button type="button" class="agenda-card" onclick="window.showDay('${dateKey}', ${when.getDay()})">
+            <div class="agenda-card-top">
+                <span class="agenda-date">${fmtDate(dateKey)} • ${DAY_NAMES[when.getDay()]}</span>
+                <span class="agenda-relative${urgentClass}">${relative}</span>
+            </div>
+            <div class="agenda-items">${items}</div>
+        </button>`;
+    }).join("");
+}
+
+function renderSummary() {
+    const container = document.getElementById("summary-container");
+    container.innerHTML = Object.keys(subjects).map((id, index) => {
+        const subject = subjects[id];
+        const stats = subjectAttendanceStats(attendanceData, id);
+        const rateText = stats.rate === null ? "—" : `${stats.rate}%`;
+        const progress = stats.rate ?? 0;
+        const lowClass = stats.rate !== null && stats.rate < 75 ? " low" : "";
+        const daysText = subject.days.map(day => DAY_NAMES[day].slice(0, 3)).join(" e ");
+
+        return `<article class="subject-card">
+            <span class="subject-accent tone-${index}" aria-hidden="true"></span>
+            <div class="subject-info">
+                <div class="subject-title-row">
+                    <span class="subject-code">${id}</span>
+                    <span class="subject-name">${subject.name}</span>
+                </div>
+                <div class="subject-meta">
+                    <span>${daysText}</span>
+                    <span>${stats.present} presenças</span>
+                    <span class="${stats.absent > 0 ? "danger" : ""}">${stats.absent} ${stats.absent === 1 ? "falta" : "faltas"}</span>
+                    ${stats.cancelled ? `<span>${stats.cancelled} cancelada${stats.cancelled > 1 ? "s" : ""}</span>` : ""}
+                </div>
+            </div>
+            <div class="subject-rate">
+                <strong>${rateText}</strong>
+                <small>freq. registrada</small>
+                <div class="progress-track" aria-hidden="true"><div class="progress-fill${lowClass}" style="width:${progress}%"></div></div>
+            </div>
+        </article>`;
+    }).join("");
+}
+
+function renderSemesterStats() {
+    const container = document.getElementById("semesterStats");
+    const stats = aggregateAttendanceStats(attendanceData);
+    const totalEvents = countEvents(eventsData);
+    const rateText = stats.rate === null ? "—" : `${stats.rate}%`;
+    const progress = stats.rate ?? 0;
+    const lowClass = stats.rate !== null && stats.rate < 75 ? " low" : "";
+
+    container.innerHTML = `
+        <div class="stat-box green"><strong>${stats.present}</strong><span>Presenças</span></div>
+        <div class="stat-box red"><strong>${stats.absent}</strong><span>Faltas</span></div>
+        <div class="stat-box violet"><strong>${totalEvents}</strong><span>Eventos</span></div>
+        <div class="semester-rate">
+            <div class="semester-rate-row"><span>Frequência registrada</span><strong>${rateText}</strong></div>
+            <div class="progress-track" style="width:100%" aria-hidden="true"><div class="progress-fill${lowClass}" style="width:${progress}%"></div></div>
+        </div>`;
+}
+
+function renderCalendar() {
+    const calendar = document.getElementById("calendarDays");
+    const display = document.getElementById("monthDisplay");
+    calendar.innerHTML = "";
+
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    const monthLabel = new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" }).format(currentDate);
+    display.textContent = monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1);
+
+    const firstWeekday = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const today = keyOfToday();
+
+    for (let index = 0; index < firstWeekday; index += 1) {
+        calendar.insertAdjacentHTML("beforeend", `<div class="calendar-spacer" aria-hidden="true"></div>`);
+    }
+
+    for (let day = 1; day <= daysInMonth; day += 1) {
+        const dateKey = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+        const weekday = new Date(year, month, day).getDay();
+        const hasClass = Object.values(subjects).some(subject => subject.days.includes(weekday));
+        const statuses = normaliseRecord(attendanceData[dateKey]);
+        const statusClass = Object.keys(statuses).length ? getDayClass(statuses) : "";
+        const events = Object.values(normaliseRecord(eventsData[dateKey])).slice(0, 3);
+        const dots = events.map(event => `<span class="evt-dot evt-${eventTypeClass(normaliseRecord(event).type)}"></span>`).join("");
+        const selectedClass = selectedDay?.dateKey === dateKey ? " selected" : "";
+        const className = ["day-card", hasClass ? "has-class" : "no-class", statusClass, dateKey === today ? "today" : "", selectedClass].filter(Boolean).join(" ");
+        const ariaLabel = `${day} de ${monthLabel}`;
+
+        calendar.insertAdjacentHTML("beforeend", `<button type="button" class="${className}" aria-label="${ariaLabel}" onclick="window.showDay('${dateKey}', ${weekday})">
+            <span class="day-number">${day}</span>
+            <span class="evt-dots" aria-hidden="true">${dots}</span>
+        </button>`);
+    }
+}
+
+function renderAll() {
+    renderCalendar();
+    renderSummary();
+    renderAgenda();
+    renderDayDetails();
+    renderSemesterStats();
+    refreshIcons();
+}
+
+refreshIcons();
